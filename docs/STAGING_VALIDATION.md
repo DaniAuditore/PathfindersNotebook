@@ -38,6 +38,27 @@ Migrations are append-only and must be applied in this exact order:
    triggers for protected tables.
 6. `006_evidence_submission_rls.sql` — narrow authenticated upload-quota
    helper and learner-only `attempt_evidence` insert policy.
+7. `007_enrollment_catalog_club_tenancy.sql` — rejects an enrollment that pins
+   a catalog owned by another club.
+8. `008_fix_published_catalog_immutability_trigger.sql` — fixes the
+   catalog-version trigger row-shape defect while retaining published-version
+   and requirement immutability.
+9. `009_grant_authenticated_catalog_progress_privileges.sql` — grants only the
+   table operations already constrained by catalog/progress RLS policies.
+10. `010_secure_evidence_workflow_functions.sql` — restores narrow privileged
+    evidence workflow functions with explicit actor, ownership, and state
+    checks.
+11. `011_grant_authenticated_evidence_read_privilege.sql` — grants evidence
+    metadata reads only through the existing enrollment-scoped RLS policies.
+
+The disposable staging project already has migrations `001`–`008` applied.
+Apply `009` through `011` next as forward-only migrations; never edit an
+applied migration to make these corrections. The grants do not bypass RLS or
+add a policy: authenticated actors remain limited to the rows and operations
+allowed by their existing policies.
+After applying it, publish a disposable draft catalog version,
+then verify a second update or delete of that version and every requirement
+mutation against it are rejected.
 
 > **Authenticated Supabase environment required — do not run as part of local
 > verification.** An authorized staging operator may run the following from a
@@ -52,7 +73,7 @@ supabase migration list --linked
 ```
 
 Before the push, the dry-run output must show only the unapplied ordered local
-migrations. After it, the linked migration list must show `001` through `006`
+migrations. After it, the linked migration list must show `001` through `011`
 as applied. Do not use `--include-all` to bypass migration history, and do not
 run the empty `supabase/seed.sql` with real data.
 
@@ -177,6 +198,7 @@ Local checks remain credential-free and may be run independently:
 npm test
 npm run lint
 npm run typecheck
+npm run test:migrations
 git diff --check
 ```
 
