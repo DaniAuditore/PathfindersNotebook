@@ -1,0 +1,9 @@
+# dependencies and framework output
+node_modules/
+.next/
+coverage/
+*.tsbuildinfo
+
+# local environment and Supabase state
+.env.local
+supabase/.temp/
