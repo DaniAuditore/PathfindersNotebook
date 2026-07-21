@@ -7,6 +7,7 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
+    "test:migrations": "node scripts/migration-gate.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.1.6",
+    "supabase": "2.109.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"
   }
