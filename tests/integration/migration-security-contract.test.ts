@@ -7,11 +7,23 @@ const migration = (name: string) => readFileSync(resolve(process.cwd(), "supabas
 describe("Supabase migration security contracts", () => {
   it("preserves immutable published catalog versions and audit records", () => {
     const catalog = migration("002_catalog_versions.sql");
+    const remediation = migration("008_fix_published_catalog_immutability_trigger.sql");
     const identity = migration("001_identity_clubs.sql");
     expect(catalog).toContain("published catalog versions are immutable; create a new version");
     expect(catalog).toContain("requirements of published catalog versions are immutable; create a new version");
+    expect(remediation).toContain("if (to_jsonb(old) ->> 'status') = 'published' then");
+    expect(remediation).toContain("before insert or update or delete on public.requirements");
     expect(identity).toContain("audit_log_immutable before update or delete");
     expect(identity).toContain('create policy "authorized actors read audit log"');
+  });
+
+  it("handles catalog-version and requirement trigger row shapes without unavailable fields", () => {
+    const remediation = migration("008_fix_published_catalog_immutability_trigger.sql");
+
+    expect(remediation).toContain("mutation_row jsonb := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end");
+    expect(remediation).toContain("affected_version_id := nullif(mutation_row ->> 'catalog_version_id', '')::uuid");
+    expect(remediation).not.toMatch(/\b(?:new|old)\.catalog_version_id\b/i);
+    expect(remediation).not.toContain("security definer");
   });
 
   it("declares RLS barriers for cross-club data and private storage", () => {
@@ -52,6 +64,23 @@ describe("Supabase migration security contracts", () => {
     expect(enrollment).toContain("enrollments must pin a published version of their catalog");
     expect(enrollment).toContain("enrollment version is immutable; use an audited migration");
     expect(catalog).toContain("published catalog versions are immutable; create a new version");
+  });
+
+  it("allows enrollment only when its catalog belongs to the same club", () => {
+    const tenancy = migration("007_enrollment_catalog_club_tenancy.sql");
+
+    expect(tenancy).toContain("create function public.enforce_enrollment_catalog_club()");
+    expect(tenancy).toContain("catalog.id = new.catalog_id");
+    expect(tenancy).toContain("catalog.club_id = new.club_id");
+    expect(tenancy).toContain("before insert or update of club_id, catalog_id on public.enrollments");
+  });
+
+  it("rejects cross-club catalog enrollment without bypassing RLS", () => {
+    const tenancy = migration("007_enrollment_catalog_club_tenancy.sql");
+
+    expect(tenancy).toContain("enrollment catalog must belong to the enrollment club");
+    expect(tenancy).toContain("using errcode = '23514'");
+    expect(tenancy).not.toContain("security definer");
   });
 
   it("rejects a text-only submission when a requirement requires file evidence", () => {
