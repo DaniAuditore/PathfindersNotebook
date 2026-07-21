@@ -1,0 +1,2 @@
+-- Seed data is intentionally empty. It will be introduced alongside RLS-safe
+-- identity and club fixtures in the relevant migration batch.
