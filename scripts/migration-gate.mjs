@@ -1,9 +1,13 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
 const localSupabase = join(root, "node_modules", "supabase", "dist", "supabase.js");
+const localVitest = join(root, "node_modules", "vitest", "vitest.mjs");
+const databaseTestDirectory = join(root, "supabase", "tests", "database");
+const databaseFixtureHelper = "fixtures.sql";
+const localApiSuite = join("tests", "integration", "local-supabase-storage.test.ts");
 
 let primaryFailure;
 let startAttempted = false;
@@ -21,7 +25,7 @@ function write(output, stream = process.stdout) {
   stream.write(redact(String(output)));
 }
 
-function run(command, args, { allowFailure = false } = {}) {
+function run(command, args, { allowFailure = false, env = process.env } = {}) {
   const label = [command, ...args].join(" ");
   write(`\n[migration-gate] $ ${label}\n`);
 
@@ -29,7 +33,7 @@ function run(command, args, { allowFailure = false } = {}) {
     let output = "";
     const child = spawn(command, args, {
       cwd: root,
-      env: process.env,
+      env,
       shell: false,
       windowsHide: true,
     });
@@ -65,6 +69,33 @@ function runSupabase(args, options) {
   return run(process.execPath, [localSupabase, ...args], options);
 }
 
+function executableDatabaseSuites() {
+  return readdirSync(databaseTestDirectory, { withFileTypes: true })
+    .filter(
+      (entry) => entry.isFile() && entry.name.endsWith(".sql") && entry.name !== databaseFixtureHelper,
+    )
+    .map((entry) => entry.name)
+    .sort();
+}
+
+async function runDatabaseSuites() {
+  const suites = executableDatabaseSuites();
+  if (suites.length === 0) {
+    throw new Error("No executable pgTAP suites were found.");
+  }
+
+  write(`\n[migration-gate] Running ${suites.length} pgTAP suites in deterministic order.\n`);
+  for (const suite of suites) {
+    await runSupabase(["test", "db", "--local", join(databaseTestDirectory, suite)]);
+  }
+}
+
+async function runLocalApiSuite() {
+  await run(process.execPath, [localVitest, "run", localApiSuite, "--bail=1"], {
+    env: { ...process.env, LOCAL_SUPABASE_TESTS: "1" },
+  });
+}
+
 async function diagnostics() {
   write("\n[migration-gate] Failure diagnostics (sensitive values redacted)\n", process.stderr);
   await runSupabase(["status", "-o", "env"], { allowFailure: true });
@@ -89,12 +120,19 @@ try {
       "Pinned Supabase CLI was not found. Run npm ci before npm run test:migrations; the gate will not download tooling.",
     );
   }
+  if (!existsSync(localVitest)) {
+    throw new Error(
+      "Local Vitest was not found. Run npm ci before npm run test:migrations; the gate will not download tooling.",
+    );
+  }
 
   await run("docker", ["version", "--format", "{{.Server.Version}}"]);
   startAttempted = true;
   await runSupabase(["start"]);
   await runSupabase(["db", "reset", "--local", "--no-seed"]);
-  write("\n[migration-gate] Local reset completed: migrations 001–011 were applied from zero without a seed.\n");
+  write("\n[migration-gate] Local reset completed: the current migration chain was applied from zero without a seed.\n");
+  await runDatabaseSuites();
+  await runLocalApiSuite();
 } catch (error) {
   primaryFailure = error instanceof Error ? error : new Error(String(error));
   await diagnostics();
@@ -117,5 +155,5 @@ if (primaryFailure) {
   write(`\n[migration-gate] FAILED: ${primaryFailure.message}\n`, process.stderr);
   process.exitCode = 1;
 } else {
-  write("\n[migration-gate] PASS: local Supabase stack was reset and torn down.\n");
+  write("\n[migration-gate] PASS: migrations, pgTAP, local Auth/Storage APIs, and cleanup passed.\n");
 }
