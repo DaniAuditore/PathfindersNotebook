@@ -26,7 +26,106 @@ The staging redirect URLs must allow the actual staging origin and the local
 development origins already declared in `supabase/config.toml`. Use only
 disposable fixture accounts for the role matrix below.
 
-## Migration gate
+## Credential-free local migration gate
+
+The local gate is the pre-merge database/API quality gate. It does not link to,
+read from, or mutate staging. Its pinned prerequisites are:
+
+- Node `v24.14.1`, exactly as recorded in `.nvmrc`;
+- repository dependencies from `npm ci`, including Supabase CLI `2.109.1` from
+  `package-lock.json` (never a global CLI or floating `npx` download); and
+- a running Docker Engine/Desktop. Docker Engine `29.2.1` is the tested
+  baseline.
+
+From a clean checkout, the canonical command is:
+
+```bash
+npm ci
+npm run test:migrations
+```
+
+`npm run test:migrations` starts local Supabase, resets without a seed from zero
+through current migration `014`, runs authenticated pgTAP plus local Auth and
+Storage API tests, and stops with `--no-backup`. It needs no Supabase login,
+linked project, hosted credentials, manual fixture IDs, or real data. Run
+`npm test` afterward for complementary static/domain coverage; it does not
+replace executable migration validation.
+
+### Local status, logs, and cleanup
+
+Use the pinned CLI through Node so troubleshooting cannot silently select a
+different global version:
+
+```bash
+node node_modules/supabase/dist/supabase.js status
+node node_modules/supabase/dist/supabase.js stop --project-id pathfindersnotebook --no-backup
+docker ps -a --filter "label=com.supabase.cli.project=pathfindersnotebook"
+docker logs --tail 100 <matching-container-name-or-id>
+```
+
+`status` can print local development keys. Inspect it locally, but never paste
+its unredacted output into tickets, CI artifacts, screenshots, or this document.
+Supabase CLI `2.109.1` has no local `logs` subcommand, so inspect only the
+project-labelled containers with `docker logs`. The gate itself redacts known
+local keys and captures the last 100 lines on failure.
+
+The gate attempts cleanup even after failure. If it was interrupted, first run
+the project-specific `stop` command above. If the CLI cannot spawn, list
+containers with the project label, then remove only the displayed matching
+containers with `docker rm -f <id>`. Inspect Docker Desktop volumes and networks
+for the same exact `pathfindersnotebook` project label/name and remove only
+those leftovers; never use a machine-wide prune or `supabase stop --all` on a
+shared development host.
+
+On Windows, `EUNKNOWN: unknown error, uv_spawn` means the pinned CLI process did
+not start; it is not evidence that migrations passed. Confirm `node --version`
+is `v24.14.1`, `docker version` reaches the engine, restart Docker Desktop, run
+`npm ci`, perform the project-specific cleanup above, and retry. If Windows
+still returns `uv_spawn`, run the clean-checkout gate in a Docker-capable WSL2
+or Linux environment and preserve the failure as an environment risk. The
+required protected Ubuntu PR check must still pass; a workaround never permits
+staging rollout by itself.
+
+### Updating pinned tooling
+
+Tool updates are deliberate repository changes, never an ad-hoc global install:
+
+1. Choose and test an exact Node release and exact Supabase CLI release against
+   this repository and Docker baseline.
+2. Change `.nvmrc` for Node. Update the CLI and lockfile with
+   `npm install --save-dev --save-exact supabase@<exact-version>` under that Node
+   version; do not hand-edit `package-lock.json`.
+3. From a clean dependency tree run `npm ci`, verify `node --version` and
+   `node node_modules/supabase/dist/supabase.js --version`, then run
+   `npm run test:migrations`, `npm test`, `npm run lint`, and
+   `npm run typecheck` without a production build.
+4. Open a PR and require the Linux `migration-gate` check. Update the documented
+   tested versions only after local and protected-PR evidence passes.
+
+## Required CI check and ruleset evidence
+
+The workflow file declares both the job and status check name exactly as
+`migration-gate`. Repository administrators must configure the target branch's
+active branch-protection rule or repository ruleset to require that exact check
+before merge. Workflow YAML proves the check exists; it does **not** prove the
+repository enforces it.
+
+MG8/MG10 evidence must record, without tokens or environment dumps:
+
+- repository and protected target branch, active ruleset/protection name and
+  stable rule identifier or settings URL;
+- enforcement state, bypass actors/teams, and the required-status-check entry
+  `migration-gate` (including the GitHub Actions source app when displayed);
+- a protected PR URL and successful `migration-gate` run URL/attempt; and
+- proof that merge is blocked when that check is absent/failing and allowed only
+  after it succeeds.
+
+MG8 is enforced by active repository ruleset `19568157` on
+`refs/heads/ftr_base`: it requires the exact `migration-gate` check, has no
+bypass actors, and does not alter `main`. Protected-PR execution evidence is
+still pending, so MG10 remains incomplete.
+
+## Forward-only migration and release order
 
 Migrations are append-only and must be applied in this exact order:
 
@@ -34,48 +133,59 @@ Migrations are append-only and must be applied in this exact order:
 2. `002_catalog_versions.sql`
 3. `003_enrollment_progress_review.sql`
 4. `004_private_evidence.sql`
-5. `005_atomic_protected_mutation_audit.sql` — database-transaction audit
+5. `005_atomic_protected_mutation_audit.sql` — transaction-coupled audit
    triggers for protected tables.
-6. `006_evidence_submission_rls.sql` — narrow authenticated upload-quota
-   helper and learner-only `attempt_evidence` insert policy.
-7. `007_enrollment_catalog_club_tenancy.sql` — rejects an enrollment that pins
-   a catalog owned by another club.
-8. `008_fix_published_catalog_immutability_trigger.sql` — fixes the
-   catalog-version trigger row-shape defect while retaining published-version
-   and requirement immutability.
+6. `006_evidence_submission_rls.sql` — narrow authenticated upload-quota helper
+   and learner-only `attempt_evidence` insert policy.
+7. `007_enrollment_catalog_club_tenancy.sql` — rejects enrollment against a
+   catalog owned by another club.
+8. `008_fix_published_catalog_immutability_trigger.sql` — fixes shared trigger
+   row-shape handling and blocks requirement insert/update/delete after publish.
 9. `009_grant_authenticated_catalog_progress_privileges.sql` — grants only the
-   table operations already constrained by catalog/progress RLS policies.
-10. `010_secure_evidence_workflow_functions.sql` — restores narrow privileged
-    evidence workflow functions with explicit actor, ownership, and state
-    checks.
-11. `011_grant_authenticated_evidence_read_privilege.sql` — grants evidence
-    metadata reads only through the existing enrollment-scoped RLS policies.
+   table operations already constrained by catalog/progress RLS.
+10. `010_secure_evidence_workflow_functions.sql` — restores narrow definer
+    evidence functions with explicit actor, ownership, and state checks.
+11. `011_grant_authenticated_evidence_read_privilege.sql` — exposes evidence
+    metadata reads only through existing enrollment-scoped RLS.
+12. `012_grant_service_role_provisioning_and_scan_privileges.sql` — adds
+    operation-specific disposable provisioning and scanner privileges.
+13. `013_complete_service_role_catalog_provisioning_read.sql` — adds the exact
+    catalog-version status read needed by publication validation.
+14. `014_complete_service_role_catalog_tenancy_read.sql` — adds the exact
+    catalog identity/club read needed by the tenancy trigger.
 
-The disposable staging project already has migrations `001`–`008` applied.
-Apply `009` through `011` next as forward-only migrations; never edit an
-applied migration to make these corrections. The grants do not bypass RLS or
-add a policy: authenticated actors remain limited to the rows and operations
-allowed by their existing policies.
-After applying it, publish a disposable draft catalog version,
-then verify a second update or delete of that version and every requirement
-mutation against it are rejected.
+The known disposable staging state is **only `001`–`007` applied**. Migrations
+`008`–`014` are local-only and are blocked from staging until MG10 passes after
+MG8 and MG9. Never edit an applied migration to make a correction.
+
+The release sequence is:
+
+1. Pass the clean-checkout local gate through `014` and complementary checks.
+2. Make `migration-gate` required and capture active ruleset evidence (MG8).
+3. Merge these operational docs (MG9).
+4. Record successful clean-checkout local and protected-PR acceptance (MG10).
+5. Only then may an authorized operator confirm staging history, dry-run and
+   apply exactly `008`–`014` forward-only, and confirm history through `014`.
+6. Run and record the hosted RLS/RPC, browser, scanner, private Storage, and
+   signed-URL checks below. Any failure blocks release and requires a new
+   forward-only remediation.
 
 > **Authenticated Supabase environment required — do not run as part of local
-> verification.** An authorized staging operator may run the following from a
-> clean checkout after confirming the project reference is disposable:
+> verification.** After MG10, an authorized staging operator may run the
+> following from a clean checkout after confirming the project is disposable:
 
 ```bash
-supabase link --project-ref <staging-project-ref>
-supabase migration list --linked
-supabase db push --linked --dry-run
-supabase db push --linked
-supabase migration list --linked
+node node_modules/supabase/dist/supabase.js link --project-ref <staging-project-ref>
+node node_modules/supabase/dist/supabase.js migration list --linked
+node node_modules/supabase/dist/supabase.js db push --linked --dry-run
+node node_modules/supabase/dist/supabase.js db push --linked
+node node_modules/supabase/dist/supabase.js migration list --linked
 ```
 
-Before the push, the dry-run output must show only the unapplied ordered local
-migrations. After it, the linked migration list must show `001` through `011`
-as applied. Do not use `--include-all` to bypass migration history, and do not
-run the empty `supabase/seed.sql` with real data.
+Before the push, the linked history must show `001`–`007` and the dry-run must
+show exactly ordered migrations `008`–`014`, with no gaps or extras. Stop if it
+does not. Afterward, history must show `001`–`014`. Do not use `--include-all`
+to bypass history and do not run the empty `supabase/seed.sql` with real data.
 
 ## Staging fixtures and role matrix
 
@@ -202,4 +312,6 @@ npm run test:migrations
 git diff --check
 ```
 
-These commands do not substitute for the authenticated staging evidence above.
+The credential-free local/CI gate is the pre-merge quality gate; the authenticated
+hosted checklist is the post-MG10 staging release gate. Neither substitutes for
+the other, and both must pass before release.

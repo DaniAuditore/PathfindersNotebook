@@ -5,51 +5,71 @@ modular monolith with Supabase adapters.
 
 ## Local development
 
-1. Copy `.env.example` to `.env.local` and provide the publishable Supabase
+1. Use the exact Node version in `.nvmrc` (`v24.14.1`) and run `npm ci`. The
+   lockfile installs the repository-local Supabase CLI `2.109.1`; do not replace
+   it with a global or floating `npx` version.
+2. Copy `.env.example` to `.env.local` and provide only the publishable Supabase
    project values. Do not place service-role credentials in browser variables.
-2. Run `npm install`.
 3. Run `npm run dev`.
+
+## Executable migration gate
+
+Prerequisites are Node `v24.14.1`, the dependencies installed by `npm ci`, and
+Docker Engine/Desktop running with enough resources for the local Supabase
+stack. Docker Engine `29.2.1` is the tested baseline. No Supabase login, linked
+project, remote credential, seed, or real fixture ID is required.
+
+The canonical credential-free command is:
+
+```bash
+npm run test:migrations
+```
+
+It starts a local stack, resets from zero through the current migration `014`,
+runs authenticated pgTAP and local Auth/Storage API checks, and stops the stack
+without retaining its database. `npm test` remains complementary fast coverage;
+it does not replace this gate. See
+[the staging validation checklist](docs/STAGING_VALIDATION.md) for status/log
+troubleshooting, Windows `uv_spawn`, pinned-tool updates, CI enforcement, and
+the separate hosted release gate.
 
 ## Supabase deployment and safeguarding operations
 
-1. Install the Supabase CLI in the deployment environment, authenticate there,
-   and link the intended project. Keep its access token and any service-role key
-   in server-side CI/deployment secrets only; neither belongs in `.env.local` or
-   a `NEXT_PUBLIC_*` variable.
-2. Apply the ordered migrations in `supabase/migrations/` (`001` through `011`,
-   including the mandatory audit trigger in `005` and evidence-write RLS policy
-   in `006`, plus the catalog/enrollment club-ownership trigger in `007`) with
-   the Supabase migration command for the target project. Migration `008`
-   corrects the published-catalog trigger for catalog-version row shape while
-   retaining catalog/requirement immutability. Migration `009` supplies only
-   the authenticated table privileges required for the existing catalog and
-   progress RLS policies; it does not bypass RLS. Migration `010` restores
-   the narrow evidence workflow functions with explicit actor, ownership, and
-   state checks, while `011` grants evidence reads only through existing RLS.
-   Apply
-   them to a disposable/staging project first and verify RLS as every
-   application role. See [the staging validation checklist](docs/STAGING_VALIDATION.md)
-   for the required order, non-secret configuration, and release evidence.
-3. `supabase/seed.sql` is intentionally empty. Add only non-production fixture
+1. Staging currently has only migrations `001`–`007`. Migrations `008`–`014`
+   are forward-only and MUST NOT be applied to staging until MG10 records a
+   successful clean-checkout local gate and protected-PR CI run. The required
+   CI status name is exactly `migration-gate`; workflow YAML alone is not
+   branch-protection/ruleset evidence.
+2. After MG10, an authorized operator must apply pending migrations `008`
+   through `014` in filename order to disposable staging, then record the
+   hosted RLS/RPC, browser, scanner, private Storage, and signed-URL smoke
+   checks. Hosted validation supplements the local/CI gate; neither substitutes
+   for the other. Follow
+   [the staging validation checklist](docs/STAGING_VALIDATION.md) for the exact
+   order and evidence requirements. Never edit an applied migration.
+3. Keep Supabase access tokens, database passwords, and service-role keys only
+   in approved server-side secret stores; none belongs in `.env.local`, a
+   `NEXT_PUBLIC_*` variable, documentation, screenshots, or fixtures.
+4. `supabase/seed.sql` is intentionally empty. Add only non-production fixture
    data for local development; do not seed real children, guardian contact data,
    or uploaded evidence.
-4. Confirm the `evidence` bucket remains private, permitted MIME types and the
+5. Confirm the `evidence` bucket remains private, permitted MIME types and the
    10 MiB limit are retained, and downloads are issued only by the authorized
    five-minute signed URL handler. Never replace it with public URLs.
-5. The default evidence retention is 24 months after class closure. Before
+6. The default evidence retention is 24 months after class closure. Before
    deletion, an administrator must check retention expiry and legal holds; the
    deletion workflow preserves non-sensitive audit metadata.
-6. Before inviting minors or guardians, obtain and record the club's required
+7. Before inviting minors or guardians, obtain and record the club's required
    safeguarding/guardian consent, restrict membership to authorized adults,
    review assigned roles, and establish the local incident/escalation contact.
    This repository does not determine the applicable local safeguarding law.
 
 ## Quality commands
 
+- `npm run test:migrations` — canonical executable migration gate
+- `npm test` — complementary fast contracts
 - `npm run lint`
 - `npm run typecheck`
-- `npm test`
-- `npm run test:migrations`
 
 The codebase separates each business module into domain, application,
 infrastructure, and presentation layers. Domain/application code is deliberately
