@@ -1,0 +1,79 @@
+name: Migration Gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration-gate:
+    # Repository branch protection must require this exact check name: migration-gate.
+    name: migration-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pinned Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run executable migration gate
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          npm run test:migrations 2>&1 | tee artifacts/migration-gate.log
+
+      - name: Run complementary tests
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          npm test 2>&1 | tee artifacts/complementary-tests.log
+
+      - name: Collect failure diagnostics
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          {
+            echo "Node: $(node --version 2>/dev/null || echo unavailable)"
+            echo "npm: $(npm --version 2>/dev/null || echo unavailable)"
+            echo "Docker client/server:"
+            docker version --format 'client={{.Client.Version}} server={{.Server.Version}}' 2>&1 || true
+            echo "Supabase project containers:"
+            docker ps -a \
+              --filter 'label=com.supabase.cli.project' \
+              --format 'table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}' 2>&1 || true
+          } > artifacts/runner-diagnostics.txt
+
+      - name: Stop local Supabase resources
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          if [[ -f node_modules/supabase/dist/supabase.js ]]; then
+            node node_modules/supabase/dist/supabase.js stop --no-backup
+          fi
+
+      - name: Upload redacted failure artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-gate-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 7
