@@ -1,0 +1,2675 @@
+{
+  "schemaVersion": 1,
+  "uuidNamespace": {
+    "id": "f40933a4-a747-5677-ab51-8b89aaaefb4e",
+    "name": "pathfindersnotebook.catalog.official",
+    "algorithm": "UUIDv5-SHA1",
+    "entityName": "sourceCode"
+  },
+  "source": {
+    "id": "d57be2a8-7a6a-5fdb-9181-99aaad22ebaa",
+    "sourceCode": "dsa.amigo.es",
+    "documentTitle": "Tarjeta de Clase Amigo",
+    "authority": "División Sudamericana, Ministerio de Conquistadores y Aventureros",
+    "locale": "es",
+    "documentSha256": "c29d62235ebfb819a89759f01af8e98858817ce3bc2d9947b5af11b652ad139a",
+    "revisionKey": "dsa-amigo-official-card-es-undated",
+    "isUndated": true,
+    "provenance": "Transcripción estructurada de las páginas visuales 2–5 de la tarjeta oficial; las imágenes visibles prevalecen sobre el OCR incrustado.",
+    "transcriptionNotes": "El OCR incrustado duplica páginas y contradice el contenido visible. En particular, el requisito General 5 visible dice «Leer el libro Vaso de Barro.». No se observa año de edición.",
+    "visualPageReferences": [
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "family": {
+    "id": "56590aef-c83d-56a0-be21-ff87940bb156",
+    "familyCode": "amigo",
+    "title": "Amigo"
+  },
+  "level": {
+    "id": "e2f7bfec-2ce3-5e78-ad31-d16a2611bef6",
+    "levelCode": "amigo.regular",
+    "familyCode": "amigo",
+    "sourceCode": "dsa.amigo.es",
+    "classType": "regular",
+    "title": "Amigo",
+    "position": 0
+  },
+  "sections": [
+    {
+      "id": "86d1e0c8-2bfe-5d98-9188-ad9313cbcec9",
+      "sourceCode": "amigo.reg.s01",
+      "officialCode": "AMI-REG-S01",
+      "slug": "generales",
+      "title": "Generales",
+      "position": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "17ad89fe-6276-514a-b13b-ddcaee004e87",
+      "sourceCode": "amigo.reg.s02",
+      "officialCode": "AMI-REG-S02",
+      "slug": "descubrimiento-espiritual",
+      "title": "Descubrimiento espiritual",
+      "position": 1,
+      "visualPageReferences": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "38da4cec-59a2-511d-a43f-e8820480e772",
+      "sourceCode": "amigo.reg.s03",
+      "officialCode": "AMI-REG-S03",
+      "slug": "sirviendo-a-los-demas",
+      "title": "Sirviendo a los demás",
+      "position": 2,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "822013f9-128e-5bcf-839d-9727da6e55e8",
+      "sourceCode": "amigo.reg.s04",
+      "officialCode": "AMI-REG-S04",
+      "slug": "desarrollo-de-la-amistad",
+      "title": "Desarrollo de la amistad",
+      "position": 3,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "9a02d559-e6ec-520d-9992-6af1a925ef5d",
+      "sourceCode": "amigo.reg.s05",
+      "officialCode": "AMI-REG-S05",
+      "slug": "salud-y-aptitud-fisica",
+      "title": "Salud y aptitud física",
+      "position": 4,
+      "visualPageReferences": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "f59662f4-e0f7-5dc0-9ac2-d51863cd2a82",
+      "sourceCode": "amigo.reg.s06",
+      "officialCode": "AMI-REG-S06",
+      "slug": "organizacion-y-liderazgo",
+      "title": "Organización y liderazgo",
+      "position": 5,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "98083262-41e9-5f00-ada3-e939a34aece9",
+      "sourceCode": "amigo.reg.s07",
+      "officialCode": "AMI-REG-S07",
+      "slug": "estudio-de-la-naturaleza",
+      "title": "Estudio de la naturaleza",
+      "position": 6,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "f3eb59cd-0f94-5b85-8a67-13110fe913d8",
+      "sourceCode": "amigo.reg.s08",
+      "officialCode": "AMI-REG-S08",
+      "slug": "arte-de-acampar",
+      "title": "Arte de acampar",
+      "position": 7,
+      "visualPageReferences": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "2e2c0d3a-2b9f-5f77-9d8f-1b10c48be83f",
+      "sourceCode": "amigo.reg.s09",
+      "officialCode": "AMI-REG-S09",
+      "slug": "estilo-de-vida",
+      "title": "Estilo de vida",
+      "position": 8,
+      "visualPageReferences": [
+        5
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "id": "7cf5090a-2aa5-5bb5-9367-48d55d17e07f",
+      "sourceCode": "amigo.reg.s01.r01",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "numeric",
+      "title": "Tener como mínimo 10 años de edad.",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "administrative",
+        "automatic"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "1c17e4ff-af10-5dff-b53a-af07e4dacfac",
+      "sourceCode": "amigo.reg.s01.r02",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "checklist",
+      "title": "Ser miembro activo del club de Conquistadores.",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "administrative",
+        "automatic"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "adb6d872-15bd-5fa5-823b-b78a7c0b75f6",
+      "sourceCode": "amigo.reg.s01.r03",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "manual",
+      "title": "Memorizar y explicar el Voto y la Ley del Conquistador.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "07eefee9-43b4-59eb-9536-98fb2907a676",
+      "sourceCode": "amigo.reg.s01.r04",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "manual",
+      "title": "Leer el libro del club de Lectura Juvenil del año en curso.",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "6881e8f8-1dbc-5836-a3fb-49f1c8bc9ab3",
+      "sourceCode": "amigo.reg.s01.r05",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "manual",
+      "title": "Leer el libro Vaso de Barro.",
+      "position": 4,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "df29c6bd-0812-51b6-8d60-dc06fcb99cb5",
+      "sourceCode": "amigo.reg.s01.r06",
+      "sectionCode": "amigo.reg.s01",
+      "requirementType": "manual",
+      "title": "Participar activamente de la Clase Bíblica de su club.",
+      "position": 5,
+      "optional": false,
+      "modalities": [
+        "participation"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "e8501871-8741-501c-8ec6-ef095d9991e5",
+      "sourceCode": "amigo.reg.s02.r01",
+      "sectionCode": "amigo.reg.s02",
+      "requirementType": "compound",
+      "title": "Memorizar y demostrar su conocimiento en:",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "all_children"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "ba4cbc35-05c1-58d3-9c3b-92a39b1ca369",
+      "sourceCode": "amigo.reg.s02.r01.c01",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r01",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "Creación: Lo que Dios creó en cada día de la creación.",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "09cb0b47-4b69-55c2-a488-22a6b4db260b",
+      "sourceCode": "amigo.reg.s02.r01.c02",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r01",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "10 Plagas: Qué plagas cayeron sobre Egipto.",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "01f7ad22-0a77-563f-a032-f9d73fd85c96",
+      "sourceCode": "amigo.reg.s02.r01.c03",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r01",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "12 Tribus: El Nombre de cada una de las tribus de Israel.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "84ccdade-1b7f-526b-8c76-b1690aed7225",
+      "sourceCode": "amigo.reg.s02.r01.c04",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r01",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "39 libros del antiguo testamento y demostrar habilidad para encontrar cualquiera de ellos.",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "9ec5eb49-a042-508a-8d43-866bc1391580",
+      "sourceCode": "amigo.reg.s02.r02",
+      "sectionCode": "amigo.reg.s02",
+      "requirementType": "compound",
+      "title": "Leer y explicar los siguientes versículos:",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "reading",
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "all_children"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "5c0f0787-e434-5ab9-a0b6-e080f4dc6bfb",
+      "sourceCode": "amigo.reg.s02.r02.c01",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r02",
+      "childRole": "checklist_item",
+      "requirementType": "manual",
+      "title": "Juan 3:16",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "reading",
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "db5dcd0f-7479-5014-8fb7-cd9eb39f211f",
+      "sourceCode": "amigo.reg.s02.r02.c02",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r02",
+      "childRole": "checklist_item",
+      "requirementType": "manual",
+      "title": "Efesios 6:1-3",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "reading",
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "bead8ff1-c3b9-510e-933f-4413bb0c238e",
+      "sourceCode": "amigo.reg.s02.r02.c03",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r02",
+      "childRole": "checklist_item",
+      "requirementType": "manual",
+      "title": "II Timoteo 3:16",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "reading",
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "187bc553-0b8d-5f1f-8d12-a08ab79c3f2c",
+      "sourceCode": "amigo.reg.s02.r02.c04",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r02",
+      "childRole": "checklist_item",
+      "requirementType": "manual",
+      "title": "Salmo 1",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "reading",
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "75e12ef7-2684-567f-8aa7-a6efda299d96",
+      "sourceCode": "amigo.reg.s02.r03",
+      "sectionCode": "amigo.reg.s02",
+      "requirementType": "compound",
+      "title": "Lectura Bíblica:",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "all_children"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "00521b6e-a1c0-5239-b6e8-f8c793231f69",
+      "sourceCode": "amigo.reg.s02.r03.c01",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 1",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "c134f454-ec21-5f5d-8b66-3160fc8a2a5e",
+      "sourceCode": "amigo.reg.s02.r03.c02",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 2",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "bedc1ace-f1ef-5c79-8593-ac50a101e869",
+      "sourceCode": "amigo.reg.s02.r03.c03",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 3",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "c78ef850-7556-5840-9e79-4e5d5283f8b1",
+      "sourceCode": "amigo.reg.s02.r03.c04",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 4:1-16",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "0727cd5a-e1a8-5db2-a25b-f4855e443322",
+      "sourceCode": "amigo.reg.s02.r03.c05",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 6:11-22",
+      "position": 4,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "09497e14-7c22-545e-b394-7b86aab41948",
+      "sourceCode": "amigo.reg.s02.r03.c06",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 7",
+      "position": 5,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "370be5e9-5b4a-5e46-8d80-61161670c21f",
+      "sourceCode": "amigo.reg.s02.r03.c07",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 8",
+      "position": 6,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "e8b8538d-4995-520a-afc2-1f9fe937c4c9",
+      "sourceCode": "amigo.reg.s02.r03.c08",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 9:1-19",
+      "position": 7,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "75ff2748-f0fe-59cf-8365-9c51703177ae",
+      "sourceCode": "amigo.reg.s02.r03.c09",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 11:1-9",
+      "position": 8,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "31694330-76c7-50c5-b0e1-d0f8181600fd",
+      "sourceCode": "amigo.reg.s02.r03.c10",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 12:1-10",
+      "position": 9,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "0151bdef-e3f2-5f37-a835-d84f4e73245a",
+      "sourceCode": "amigo.reg.s02.r03.c11",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 13",
+      "position": 10,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "75ac7947-5f12-5f57-a5fc-9d71f3192615",
+      "sourceCode": "amigo.reg.s02.r03.c12",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 14;18-24",
+      "position": 11,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "f8401244-6e18-5356-9623-bce2429103d8",
+      "sourceCode": "amigo.reg.s02.r03.c13",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 15",
+      "position": 12,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "6ecaf7f7-9539-5497-a838-f62aadf40e18",
+      "sourceCode": "amigo.reg.s02.r03.c14",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 17:1-8;15-22",
+      "position": 13,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "16204fea-7c94-5d60-8119-9e3820c183d4",
+      "sourceCode": "amigo.reg.s02.r03.c15",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 18:1-15",
+      "position": 14,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "e589dd73-178a-560b-9abe-001a94602c23",
+      "sourceCode": "amigo.reg.s02.r03.c16",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 18:16-33",
+      "position": 15,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "62fefd8f-ae4c-56cc-99dc-2e09eadf18fe",
+      "sourceCode": "amigo.reg.s02.r03.c17",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 19:1-29",
+      "position": 16,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "98164263-76f7-51fc-8e57-aaa0c4706728",
+      "sourceCode": "amigo.reg.s02.r03.c18",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 21:1-21",
+      "position": 17,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "ad1ea858-0f14-567b-af94-3506bf37ecf0",
+      "sourceCode": "amigo.reg.s02.r03.c19",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 22:1-19",
+      "position": 18,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "8a1a9fc7-7e7e-51d8-b0d1-be18bdb07925",
+      "sourceCode": "amigo.reg.s02.r03.c20",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 23",
+      "position": 19,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "215ce296-4bf7-567d-98dd-d059afde7c13",
+      "sourceCode": "amigo.reg.s02.r03.c21",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 24:1-46,48",
+      "position": 20,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "2c7f0c9c-1432-59b5-b9a0-804739716801",
+      "sourceCode": "amigo.reg.s02.r03.c22",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 24:52-67",
+      "position": 21,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "7cde65c9-eb12-5718-8983-ef957f80601d",
+      "sourceCode": "amigo.reg.s02.r03.c23",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 27",
+      "position": 22,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "0e062c1e-45ba-559e-ac16-1465e9f6ee9f",
+      "sourceCode": "amigo.reg.s02.r03.c24",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 28",
+      "position": 23,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "53ee8f3d-a85a-573f-ad24-7a8b2e1d43a2",
+      "sourceCode": "amigo.reg.s02.r03.c25",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 29",
+      "position": 24,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "d2afc2f7-4caf-5c7c-9c31-3f15c7dff70b",
+      "sourceCode": "amigo.reg.s02.r03.c26",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 30:25-31; 31:2-3, 17-18",
+      "position": 25,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "b6cb4f90-74a9-5270-91f6-c5aed5340941",
+      "sourceCode": "amigo.reg.s02.r03.c27",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 32",
+      "position": 26,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "be2157b4-7477-5075-8d81-8376837be655",
+      "sourceCode": "amigo.reg.s02.r03.c28",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 33",
+      "position": 27,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "ae94b7d0-22b8-5d13-a7cf-27b8afbb3679",
+      "sourceCode": "amigo.reg.s02.r03.c29",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 37",
+      "position": 28,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "a5096871-9c49-52f8-abee-b7d32330c2e6",
+      "sourceCode": "amigo.reg.s02.r03.c30",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 39",
+      "position": 29,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "cad94e2c-ddec-5036-82ae-18c2aaf674e9",
+      "sourceCode": "amigo.reg.s02.r03.c31",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 40",
+      "position": 30,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "72685de1-8352-532e-94ac-00ea809dd1e3",
+      "sourceCode": "amigo.reg.s02.r03.c32",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 41",
+      "position": 31,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "5c857692-d5a5-52bd-bb66-a871d9a44fec",
+      "sourceCode": "amigo.reg.s02.r03.c33",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 42",
+      "position": 32,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "6cd0a5ba-0e1b-5b8f-a9d5-7eed55f12782",
+      "sourceCode": "amigo.reg.s02.r03.c34",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 43",
+      "position": 33,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "21d44126-6bd0-5418-8a87-60b710fd219b",
+      "sourceCode": "amigo.reg.s02.r03.c35",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 44",
+      "position": 34,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "dcfcf20f-9c04-5100-ad14-5eac671446ec",
+      "sourceCode": "amigo.reg.s02.r03.c36",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 45",
+      "position": 35,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "d93a7640-3a78-5a7e-92a9-b12dc145f22d",
+      "sourceCode": "amigo.reg.s02.r03.c37",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn. 47",
+      "position": 36,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "47e88294-dfc0-5428-a150-2a63aee216fb",
+      "sourceCode": "amigo.reg.s02.r03.c38",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Gn 50",
+      "position": 37,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        2
+      ]
+    },
+    {
+      "id": "36f2fdc0-7ae3-540a-a34c-93bbd0dfa656",
+      "sourceCode": "amigo.reg.s02.r03.c39",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 1",
+      "position": 38,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "ddf817b6-9596-5123-91bc-60c601ae7211",
+      "sourceCode": "amigo.reg.s02.r03.c40",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 2",
+      "position": 39,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "1cd614fb-dc9e-5ff4-b999-bc22713c0167",
+      "sourceCode": "amigo.reg.s02.r03.c41",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 3",
+      "position": 40,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "d0ce3513-47d2-5da4-b5fc-696e2061bd31",
+      "sourceCode": "amigo.reg.s02.r03.c42",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 4:1-17;27-31",
+      "position": 41,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "2ff77bea-5508-5b1c-b2fa-659d3104a991",
+      "sourceCode": "amigo.reg.s02.r03.c43",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 5",
+      "position": 42,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "7dcac2a1-d429-5d6d-a14f-eb8580419838",
+      "sourceCode": "amigo.reg.s02.r03.c44",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 7",
+      "position": 43,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "69b899ae-8faa-5b02-b515-13cf222ff0eb",
+      "sourceCode": "amigo.reg.s02.r03.c45",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 8",
+      "position": 44,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "94278a00-0858-5694-943a-7683e158fe6b",
+      "sourceCode": "amigo.reg.s02.r03.c46",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 9",
+      "position": 45,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c3628fcb-cd4f-56a6-bbaa-6acc878a3fe4",
+      "sourceCode": "amigo.reg.s02.r03.c47",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 10, 11",
+      "position": 46,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "efb9814d-ad9e-507e-b4ef-cd1a338861c9",
+      "sourceCode": "amigo.reg.s02.r03.c48",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 12",
+      "position": 47,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c3e7308a-2302-5137-86db-c68a772a0004",
+      "sourceCode": "amigo.reg.s02.r03.c49",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 13:17-22; 14",
+      "position": 48,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "ef2b55e9-4a44-5df7-a9d0-0c2dd7e7582a",
+      "sourceCode": "amigo.reg.s02.r03.c50",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 15:22-27; 16",
+      "position": 49,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "4039f23f-0b5a-53d3-97f5-8eeaf1f0c8ac",
+      "sourceCode": "amigo.reg.s02.r03.c51",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 17",
+      "position": 50,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "4d34803c-c6a8-5bea-a3c0-b27d06c7e568",
+      "sourceCode": "amigo.reg.s02.r03.c52",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 18",
+      "position": 51,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "78b5fee4-83c1-59fd-814f-152ffce6977f",
+      "sourceCode": "amigo.reg.s02.r03.c53",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 19",
+      "position": 52,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "a3cfd5d2-fee1-5249-a879-da4b9b7dc819",
+      "sourceCode": "amigo.reg.s02.r03.c54",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 20",
+      "position": 53,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "01e8a497-1909-54a2-8047-5b7ee8572d94",
+      "sourceCode": "amigo.reg.s02.r03.c55",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 24",
+      "position": 54,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "fae25a95-8736-5ac5-bc05-4e709f949990",
+      "sourceCode": "amigo.reg.s02.r03.c56",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 32",
+      "position": 55,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "33b19fae-83a1-5bc2-a662-77c2fa66986d",
+      "sourceCode": "amigo.reg.s02.r03.c57",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 33",
+      "position": 56,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "e076bed3-58c1-512c-bc5b-a7becb1cf52c",
+      "sourceCode": "amigo.reg.s02.r03.c58",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 34:1-14; 29-35",
+      "position": 57,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c175b259-9657-5144-a9ba-4bf3cd114fd2",
+      "sourceCode": "amigo.reg.s02.r03.c59",
+      "sectionCode": "amigo.reg.s02",
+      "parentSourceCode": "amigo.reg.s02.r03",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Éx 35:4-29 e 40",
+      "position": 58,
+      "optional": false,
+      "modalities": [
+        "reading"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "18c061c4-a750-5beb-8bf8-1607cef14e34",
+      "sourceCode": "amigo.reg.s03.r01",
+      "sectionCode": "amigo.reg.s03",
+      "requirementType": "compound",
+      "title": "Dedicar dos horas ayudando a alguien en su comunidad, a través de dos de las siguientes actividades:",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "at_least_n",
+        "threshold": 2
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "2baa19b1-b2a0-5b4f-94fe-ecc5a46525da",
+      "sourceCode": "amigo.reg.s03.r01.c01",
+      "sectionCode": "amigo.reg.s03",
+      "parentSourceCode": "amigo.reg.s03.r01",
+      "childRole": "option",
+      "requirementType": "manual",
+      "title": "Visitar a alguien que necesita de amistad y orar con esa persona.",
+      "position": 0,
+      "optional": true,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c9cc14ac-2324-562d-902d-4a25970200ea",
+      "sourceCode": "amigo.reg.s03.r01.c02",
+      "sectionCode": "amigo.reg.s03",
+      "parentSourceCode": "amigo.reg.s03.r01",
+      "childRole": "option",
+      "requirementType": "manual",
+      "title": "Ofrecer y llevar alimento a alguien carente.",
+      "position": 1,
+      "optional": true,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "97ea217d-6fac-5c87-9129-7d4853d11a7f",
+      "sourceCode": "amigo.reg.s03.r01.c03",
+      "sectionCode": "amigo.reg.s03",
+      "parentSourceCode": "amigo.reg.s03.r01",
+      "childRole": "option",
+      "requirementType": "manual",
+      "title": "Participar de un proyecto ecológico o educativo.",
+      "position": 2,
+      "optional": true,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c03cd70f-dee3-518d-bd50-e62e586628b7",
+      "sourceCode": "amigo.reg.s03.r02",
+      "sectionCode": "amigo.reg.s03",
+      "requirementType": "text",
+      "title": "Escribir una redacción de cómo ser un buen ciudadano en el hogar y en la escuela (hoja tamaño carta, letra Arial 12)",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "written"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "661138a8-52ba-5d8d-bd3f-066e8ef38e0d",
+      "sourceCode": "amigo.reg.s04.r01",
+      "sectionCode": "amigo.reg.s04",
+      "requirementType": "text",
+      "title": "Mencionar diez cualidades de un buen amigo y presentar cuatro situaciones diarias en las que usted practicó la Regla de Oro de Mateo 7:12.",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "written"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "aca9cdff-0866-5b6b-85fc-fb9d8831aecc",
+      "sourceCode": "amigo.reg.s04.r02",
+      "sectionCode": "amigo.reg.s04",
+      "requirementType": "manual",
+      "title": "Saber cantar el Himno Nacional de su país y conocer su historia. Saber el nombre del autor de la letra y de la música del himno.",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "c8b7132a-cfe8-5261-a997-38c136958740",
+      "sourceCode": "amigo.reg.s05.r01",
+      "sectionCode": "amigo.reg.s05",
+      "requirementType": "compound",
+      "title": "Completar una de las siguientes especialidades:",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "at_least_one"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "1bb1090b-dafa-5dc3-a232-721975e64848",
+      "sourceCode": "amigo.reg.s05.r01.c01",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Natación I",
+      "position": 0,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "58a971e0-1f06-5601-ad3f-c0dc96c87a93",
+      "sourceCode": "amigo.reg.s05.r01.c02",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Aptitud física",
+      "position": 1,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "540e9b44-e598-5ab6-97ce-66767b5a6b5d",
+      "sourceCode": "amigo.reg.s05.r01.c03",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Nudos y amarras",
+      "position": 2,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "162375c5-60a0-5ea5-b359-ef0b9a7f8a25",
+      "sourceCode": "amigo.reg.s05.r01.c04",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Seguridad básica en el agua",
+      "position": 3,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3
+      ]
+    },
+    {
+      "id": "8490a466-5499-5b08-a491-b75e694488ec",
+      "sourceCode": "amigo.reg.s05.r02",
+      "sectionCode": "amigo.reg.s05",
+      "requirementType": "compound",
+      "title": "Utilizando la experiencia de Daniel:",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "memorization_oral",
+        "written",
+        "participation"
+      ],
+      "completion": {
+        "kind": "all_children"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "a30ba781-25b1-5c2c-bd2e-7edc652efd31",
+      "sourceCode": "amigo.reg.s05.r02.c01",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r02",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "Explicar los principios de temperancia que él defendió, o participar de una presentación o escenificación de Daniel",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "memorization_oral",
+        "participation"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "c540ab3f-27b7-51d6-93de-ca92496b00b4",
+      "sourceCode": "amigo.reg.s05.r02.c02",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r02",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "Memorizar y explicar Daniel 1:8.",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "memorization_oral"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "51c57ab3-edaf-599b-b9ce-e63848f1ffe8",
+      "sourceCode": "amigo.reg.s05.r02.c03",
+      "sectionCode": "amigo.reg.s05",
+      "parentSourceCode": "amigo.reg.s05.r02",
+      "childRole": "step",
+      "requirementType": "manual",
+      "title": "Escribir su compromiso personal de seguir un estilo de vida saludable.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "written"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "e8ac111e-4f87-5947-af2f-1544d850ef58",
+      "sourceCode": "amigo.reg.s05.r03",
+      "sectionCode": "amigo.reg.s05",
+      "requirementType": "manual",
+      "title": "Aprender los principios de una dieta saludable y ayudar a preparar un cuadro con los grupos básicos de alimentos.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "04ce30e5-d1db-5039-b73c-62ccc3f4ac2e",
+      "sourceCode": "amigo.reg.s06.r01",
+      "sectionCode": "amigo.reg.s06",
+      "requirementType": "manual",
+      "title": "Através de la observación, acompañar todo el proceso de planeamiento hasta la ejecución de una caminata de 5 kilómetros.",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "participation",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "1de13e66-92e6-5208-918a-5a9614597733",
+      "sourceCode": "amigo.reg.s07.r01",
+      "sectionCode": "amigo.reg.s07",
+      "requirementType": "compound",
+      "title": "Completar una de las siguientes especialidades:",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "at_least_one"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "022b6668-edda-5a22-88c7-7e2ba15177c0",
+      "sourceCode": "amigo.reg.s07.r01.c01",
+      "sectionCode": "amigo.reg.s07",
+      "parentSourceCode": "amigo.reg.s07.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Felinos",
+      "position": 0,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "1aa55ec6-9bd7-57ef-a5e1-3efe606ffe88",
+      "sourceCode": "amigo.reg.s07.r01.c02",
+      "sectionCode": "amigo.reg.s07",
+      "parentSourceCode": "amigo.reg.s07.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Perros",
+      "position": 1,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "a58b10aa-794d-551f-8236-a3084c94b224",
+      "sourceCode": "amigo.reg.s07.r01.c03",
+      "sectionCode": "amigo.reg.s07",
+      "parentSourceCode": "amigo.reg.s07.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Mamíferos",
+      "position": 2,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "4f833097-34c1-537f-ae8a-8911d577de7d",
+      "sourceCode": "amigo.reg.s07.r01.c04",
+      "sectionCode": "amigo.reg.s07",
+      "parentSourceCode": "amigo.reg.s07.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Semillas",
+      "position": 3,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "13641db5-9783-5f86-96db-b4801b174dbf",
+      "sourceCode": "amigo.reg.s07.r01.c05",
+      "sectionCode": "amigo.reg.s07",
+      "parentSourceCode": "amigo.reg.s07.r01",
+      "childRole": "option",
+      "requirementType": "checklist",
+      "title": "Aves domésticas",
+      "position": 4,
+      "optional": true,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "6b875559-fc6b-5384-89b5-54b4efbcd4ae",
+      "sourceCode": "amigo.reg.s07.r02",
+      "sectionCode": "amigo.reg.s07",
+      "requirementType": "text",
+      "title": "Aprender y demostrar una forma para purificar el agua y escribir un párrafo destacando el significado de Jesús como el agua de Vida.",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "written",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "609e8588-8e8a-5ebf-988d-49ed87a93d70",
+      "sourceCode": "amigo.reg.s07.r03",
+      "sectionCode": "amigo.reg.s07",
+      "requirementType": "manual",
+      "title": "Aprender y armar tres tipos diferentes de carpas en lugares apropiados.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "ff553272-a6db-5d2d-92c7-3d2b3c42b6a0",
+      "sourceCode": "amigo.reg.s08.r01",
+      "sectionCode": "amigo.reg.s08",
+      "requirementType": "compound",
+      "title": "Demostrar cómo cuidar correctamente de una cuerda. Hacer y explicar el uso práctico de los siguientes nudos:",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "all_children"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "3dca8df2-edac-55d1-b5cf-57277ec31cf5",
+      "sourceCode": "amigo.reg.s08.r01.c01",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Simple o Cote",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "7325f4c1-71f6-5db6-901f-55c7d3983d5b",
+      "sourceCode": "amigo.reg.s08.r01.c02",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Falso",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "5c8cc2ec-6df1-50c8-9c8a-6154ff87f424",
+      "sourceCode": "amigo.reg.s08.r01.c03",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Verdadero o Llano",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "208aa7ec-2e5e-5cdb-b075-ab8870f2569f",
+      "sourceCode": "amigo.reg.s08.r01.c04",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Cirujano",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "17b561dd-19c4-59b3-84e7-a73f14bcf3b0",
+      "sourceCode": "amigo.reg.s08.r01.c05",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "As de guía",
+      "position": 4,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "84463587-d208-55c5-b0a5-64ba0ffc93ce",
+      "sourceCode": "amigo.reg.s08.r01.c06",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "As de guía doble",
+      "position": 5,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "73876f82-32ed-56fa-b7cc-c8396368a4e9",
+      "sourceCode": "amigo.reg.s08.r01.c07",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Escota",
+      "position": 6,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "fd687539-7780-56a3-9dc7-d5f395b05176",
+      "sourceCode": "amigo.reg.s08.r01.c08",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Margarita",
+      "position": 7,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "1a81399c-54cf-505a-bb2d-ce6728ce3f42",
+      "sourceCode": "amigo.reg.s08.r01.c09",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Pescador",
+      "position": 8,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "0f89faaf-e06e-518a-91c8-965eb14e06e8",
+      "sourceCode": "amigo.reg.s08.r01.c10",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Ancia",
+      "position": 9,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "fe7c4f20-5a04-5edf-b1cd-f212d933a86e",
+      "sourceCode": "amigo.reg.s08.r01.c11",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Ballestrinque",
+      "position": 10,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "a43c8a2f-266f-5b00-925b-ef53ad62f4bb",
+      "sourceCode": "amigo.reg.s08.r01.c12",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Vuelta de gancho",
+      "position": 11,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "26a64b7f-7a69-5fed-8472-b58466d8e45b",
+      "sourceCode": "amigo.reg.s08.r01.c13",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Leñador",
+      "position": 12,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "ace1422a-ce0f-570f-948b-02b7226a1136",
+      "sourceCode": "amigo.reg.s08.r01.c14",
+      "sectionCode": "amigo.reg.s08",
+      "parentSourceCode": "amigo.reg.s08.r01",
+      "childRole": "checklist_item",
+      "requirementType": "checklist",
+      "title": "Calabrote",
+      "position": 13,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 0,
+      "visualPageReferences": [
+        4
+      ]
+    },
+    {
+      "id": "ca2fbace-52ca-5b6b-b0a4-de70461d1a3d",
+      "sourceCode": "amigo.reg.s08.r02",
+      "sectionCode": "amigo.reg.s08",
+      "requirementType": "manual",
+      "title": "Completar la especialidad de Arte de acampar I",
+      "position": 1,
+      "optional": false,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        5
+      ]
+    },
+    {
+      "id": "293ff4b2-188e-5a9a-95f7-94a3ac7f1f08",
+      "sourceCode": "amigo.reg.s08.r03",
+      "sectionCode": "amigo.reg.s08",
+      "requirementType": "text",
+      "title": "Presentar en forma escrita 10 reglas para una caminata y explicar qué hacer en caso que esté perdido.",
+      "position": 2,
+      "optional": false,
+      "modalities": [
+        "written",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        5
+      ]
+    },
+    {
+      "id": "5ec0691d-bcd8-5156-b3c0-1c2d70e569e2",
+      "sourceCode": "amigo.reg.s08.r04",
+      "sectionCode": "amigo.reg.s08",
+      "requirementType": "manual",
+      "title": "Aprender las señales para seguir una pista. Preparar y seguir una pista con un mínimo de 10 señales que también pueda ser seguida por otros.",
+      "position": 3,
+      "optional": false,
+      "modalities": [
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        5
+      ]
+    },
+    {
+      "id": "35724768-f89b-5718-9b39-63c977ab9b64",
+      "sourceCode": "amigo.reg.s09.r01",
+      "sectionCode": "amigo.reg.s09",
+      "requirementType": "manual",
+      "title": "Completar una especialidad en el área de Artes y Habilidades Manuales.",
+      "position": 0,
+      "optional": false,
+      "modalities": [
+        "specialty",
+        "practical_in_person"
+      ],
+      "completion": {
+        "kind": "direct"
+      },
+      "weight": 1,
+      "visualPageReferences": [
+        5
+      ]
+    }
+  ]
+}
