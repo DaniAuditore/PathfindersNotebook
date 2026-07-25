@@ -1,50 +1,87 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
+import { progressReviewSchema, textSubmissionSchema } from "../application/progress-commands";
 import { SupabaseReviewFacade } from "../infrastructure/supabase-review-facade";
 import { requireRole, requireSession } from "@/shared/auth/session";
-import { writeActionLog } from "@/shared/observability/action-log";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
-const submissionSchema = z.object({ progressId: z.uuid(), submissionText: z.string().max(10_000).optional(), creditKey: z.string().trim().min(1).max(160).optional(), evidenceIds: z.array(z.uuid()).max(10).optional() });
-const reviewSchema = z.object({ clubId: z.uuid(), progressId: z.uuid(), attemptId: z.uuid(), decision: z.enum(["accepted", "rejected"]), reason: z.string().trim().max(2_000).optional() });
+const submissionSchema = textSubmissionSchema;
+const reviewSchema = progressReviewSchema;
 const reversalSchema = z.object({ clubId: z.uuid(), progressId: z.uuid(), attemptId: z.uuid(), rationale: z.string().trim().min(1).max(2_000) });
 const manualSchema = z.object({ clubId: z.uuid(), progressId: z.uuid(), rationale: z.string().trim().min(1).max(2_000), creditKey: z.string().trim().min(1).max(160).optional() });
 
 export async function submitProgressAction(input: unknown) {
   const command = submissionSchema.parse(input);
   const actor = await requireSession();
-  const result = await new SupabaseReviewFacade().submit({ ...command, actorId: actor.id });
   const supabase = await createSupabaseServerClient();
-  const { data: enrollment } = await supabase.from("enrollments").select("club_id").eq("id", result.enrollmentId).single();
-  if (!enrollment) throw new Error("Enrollment not found.");
-  await writeActionLog({ clubId: enrollment.club_id, actorId: actor.id, action: "progress.submitted", entityType: "progress_attempt", entityId: result.attemptId, metadata: { progressId: command.progressId } });
+  const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("enrollment_id").eq("id", command.progressId).single();
+  if (progressError || !progress) throw new Error("Progress was not found in an accessible enrollment.");
+  const { data: enrollment, error: enrollmentError } = await supabase.from("enrollments").select("student_id").eq("id", progress.enrollment_id).single();
+  if (enrollmentError || !enrollment) throw new Error("Progress was not found in an accessible enrollment.");
+  const result = await new SupabaseReviewFacade().submit({ ...command, actorId: actor.id, evidenceIds: [] });
+  revalidatePath("/dashboard");
+  revalidatePath(`/students/${enrollment.student_id}`);
   return result;
 }
 
 export async function reviewProgressAction(input: unknown) {
   const command = reviewSchema.parse(input);
-  const actor = await requireRole(command.clubId, ["admin", "instructor"]);
+  const supabase = await createSupabaseServerClient();
+  const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("enrollment_id").eq("id", command.progressId).single();
+  if (progressError || !progress) throw new Error("Progress was not found in an accessible club.");
+  const { data: enrollment, error: enrollmentError } = await supabase.from("enrollments").select("club_id, student_id").eq("id", progress.enrollment_id).single();
+  if (enrollmentError || !enrollment) throw new Error("Progress was not found in an accessible club.");
+  const actor = await requireRole(enrollment.club_id, ["admin", "instructor"]);
   const result = await new SupabaseReviewFacade().review({ ...command, actorId: actor.id });
-  await writeActionLog({ clubId: command.clubId, actorId: actor.id, action: `progress.${command.decision}`, entityType: "requirement_progress", entityId: command.progressId, metadata: { attemptId: command.attemptId, reasonProvided: Boolean(command.reason) } });
+  revalidatePath("/dashboard");
+  revalidatePath("/reviews");
+  revalidatePath(`/students/${enrollment.student_id}`);
   return result;
+}
+
+function messageFor(error: unknown) {
+  return error instanceof z.ZodError ? error.issues[0]?.message ?? "The form is invalid." : "The action could not be completed.";
+}
+
+export async function submitProgressFormAction(formData: FormData) {
+  let destination = "/dashboard?error=The+action+could+not+be+completed.";
+  const studentId = z.uuid().safeParse(formData.get("studentId"));
+  try {
+    await submitProgressAction({ progressId: formData.get("progressId"), submissionText: formData.get("submissionText") });
+    destination = studentId.success ? `/students/${studentId.data}?message=Progress+submitted.` : "/dashboard?message=Progress+submitted.";
+  } catch (error) {
+    const message = encodeURIComponent(messageFor(error));
+    destination = studentId.success ? `/students/${studentId.data}?error=${message}` : `/dashboard?error=${message}`;
+  }
+  redirect(destination);
+}
+
+export async function reviewProgressFormAction(formData: FormData) {
+  let destination = "/reviews?error=The+action+could+not+be+completed.";
+  try {
+    await reviewProgressAction({ progressId: formData.get("progressId"), attemptId: formData.get("attemptId"), decision: formData.get("decision"), reason: formData.get("reason") || undefined });
+    destination = "/reviews?message=Review+saved.";
+  } catch (error) {
+    destination = `/reviews?error=${encodeURIComponent(messageFor(error))}`;
+  }
+  redirect(destination);
 }
 
 export async function reverseProgressAction(input: unknown) {
   const command = reversalSchema.parse(input);
   const actor = await requireRole(command.clubId, ["admin", "instructor"]);
-  const result = await new SupabaseReviewFacade().reverse({ ...command, actorId: actor.id });
-  await writeActionLog({ clubId: command.clubId, actorId: actor.id, action: "progress.reversed", entityType: "requirement_progress", entityId: command.progressId, metadata: { attemptId: command.attemptId, rationaleProvided: true } });
-  return result;
+  return new SupabaseReviewFacade().reverse({ ...command, actorId: actor.id });
 }
 
 export async function manuallyCompleteProgressAction(input: unknown) {
   const command = manualSchema.parse(input);
-  const actor = await requireRole(command.clubId, ["admin", "instructor"]);
+  await requireRole(command.clubId, ["admin", "instructor"]);
   const supabase = await createSupabaseServerClient();
   const { data: enrollmentId, error } = await supabase.rpc("manually_complete_progress", { target_progress_id: command.progressId, rationale_input: command.rationale, credit_key_input: command.creditKey ?? null });
   if (error || !enrollmentId) throw new Error("Unable to manually complete this progress.");
-  await writeActionLog({ clubId: command.clubId, actorId: actor.id, action: "progress.manually_completed", entityType: "requirement_progress", entityId: command.progressId, metadata: { rationaleProvided: true } });
   return { enrollmentId };
 }
