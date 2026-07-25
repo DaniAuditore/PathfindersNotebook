@@ -6,10 +6,10 @@ import { createSupabaseServerClient } from "@/shared/supabase/server";
 export class SupabaseReviewFacade implements ReviewFacade {
   async submit(command: SubmitProgressCommand): Promise<{ attemptId: string; enrollmentId: string }> {
     const supabase = await createSupabaseServerClient();
+    const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("enrollment_id").eq("id", command.progressId).single();
+    if (progressError || !progress) throw new Error("Unable to resolve the progress being submitted.");
     const { data, error } = await supabase.rpc("submit_progress_attempt", { target_progress_id: command.progressId, submission_text_input: command.submissionText ?? null, credit_key_input: command.creditKey ?? null, evidence_ids_input: command.evidenceIds ?? [] });
     if (error || !data) throw new Error("Unable to submit this progress attempt.");
-    const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("enrollment_id").eq("id", command.progressId).single();
-    if (progressError) throw new Error("Unable to resolve the submitted progress.");
     return { attemptId: data, enrollmentId: progress.enrollment_id };
   }
 

@@ -90,6 +90,25 @@ describe("Supabase migration security contracts", () => {
     expect(evidence).toContain("this requirement requires clean evidence");
   });
 
+  it("enforces UX submission and rejection invariants in the forward-only RPC boundary", () => {
+    const remediation = migration("015_enforce_progress_rpc_invariants.sql");
+
+    expect(remediation).toContain("regexp_replace(submission_text_input, '^[[:space:]]+|[[:space:]]+$', '', 'g')");
+    expect(remediation).toContain("regexp_replace(reason_input, '^[[:space:]]+|[[:space:]]+$', '', 'g')");
+    expect(remediation).toContain("not target_requirement.requires_evidence and normalized_submission_text is null");
+    expect(remediation).toContain("raise exception 'submission text is required'");
+    expect(remediation).toContain("decision_input = 'rejected' and normalized_reason is null");
+    expect(remediation).toContain("raise exception 'a rejection reason is required'");
+  });
+
+  it("relies on transactional database audits instead of post-commit action audits", () => {
+    const actions = readFileSync(resolve(process.cwd(), "src", "modules", "review", "presentation", "actions.ts"), "utf8");
+    const facade = readFileSync(resolve(process.cwd(), "src", "modules", "review", "infrastructure", "supabase-review-facade.ts"), "utf8");
+
+    expect(actions).not.toContain("writeActionLog");
+    expect(facade.indexOf('.from("requirement_progress")')).toBeLessThan(facade.indexOf('supabase.rpc("submit_progress_attempt"'));
+  });
+
   it("issues private evidence delivery only through the configured five-minute window", () => {
     const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "files", "[evidenceId]", "route.ts"), "utf8");
     const evidenceDomain = readFileSync(resolve(process.cwd(), "src", "modules", "evidence", "domain", "evidence.ts"), "utf8");

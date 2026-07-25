@@ -1,8 +1,9 @@
-export default function HomePage() {
-  return (
-    <main>
-      <h1>Pathfinder&apos;s Notebook</h1>
-      <p>Club progress management is being prepared securely.</p>
-    </main>
-  );
+import { redirect } from "next/navigation";
+
+import { createSupabaseServerClient } from "@/shared/supabase/server";
+
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getUser();
+  redirect(data.user ? "/dashboard" : "/login");
 }
