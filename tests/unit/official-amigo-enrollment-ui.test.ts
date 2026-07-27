@@ -56,10 +56,10 @@ describe("official Amigo operational enrollment", () => {
 
     const html = renderToStaticMarkup(await EnrollmentsPage({ searchParams: Promise.resolve({ message: "Student enrolled in official regular Amigo for this year." }) }));
 
-    expect(html).toContain("Official Amigo enrollment");
-    expect(html).toContain("already-provisioned immutable official regular Amigo catalog");
+    expect(html).toContain("Inscripción oficial de Amigo");
+    expect(html).toContain("catálogo oficial regular de Amigo ya preparado");
     expect(html).toContain("Ana");
-    expect(html).toContain("Enroll in official regular Amigo");
+    expect(html).toContain("Inscribir en Amigo regular oficial");
     expect(html).toContain(`href="/students/${studentId}"`);
     expect(html).toContain('role="status"');
   });
@@ -70,8 +70,8 @@ describe("official Amigo operational enrollment", () => {
     const html = renderToStaticMarkup(await EnrollmentsPage({ searchParams: Promise.resolve({}) }));
 
     expect(html).toContain("STG Alumno");
-    expect(html).toContain("Enroll in official regular Amigo");
-    expect(html).not.toContain("No eligible students are available");
+    expect(html).toContain("Inscribir en Amigo regular oficial");
+    expect(html).not.toContain("No hay alumnos elegibles");
   });
 
   it("does not expose enrollment controls without an eligible server-derived student", async () => {
@@ -79,8 +79,8 @@ describe("official Amigo operational enrollment", () => {
 
     const html = renderToStaticMarkup(await EnrollmentsPage({ searchParams: Promise.resolve({}) }));
 
-    expect(html).toContain("No eligible students are available");
-    expect(html).not.toContain("Enroll in official regular Amigo</button>");
+    expect(html).toContain("No hay alumnos elegibles");
+    expect(html).not.toContain("Inscribir en Amigo regular oficial</button>");
   });
 
   it("derives the club from the student and re-authorizes before enrollment", async () => {

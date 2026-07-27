@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">Cuaderno de Conquistadores</title>
+  <desc id="desc">Un cuaderno azul con una estrella dorada</desc>
+  <rect width="192" height="192" rx="38" fill="#075985"/>
+  <path d="M53 38h71c9 0 16 7 16 16v91c0 5-4 9-9 9H62c-9 0-16-7-16-16V54c0-9 7-16 16-16Z" fill="#fff"/>
+  <path d="M65 38v116M82 72h39M82 96h39M82 120h27" stroke="#075985" stroke-width="9" stroke-linecap="round"/>
+  <path d="m134 31 6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2 6-13Z" fill="#f59e0b" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+</svg>

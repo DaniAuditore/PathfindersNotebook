@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),
   createSupabaseServerClient: vi.fn(),
+  cookieStore: { get: vi.fn(), set: vi.fn() },
+  cookies: vi.fn(),
   redirect: vi.fn((destination: string) => { throw new Error(`REDIRECT:${destination}`); }),
 }));
 
@@ -11,12 +14,17 @@ vi.mock("server-only", () => ({}));
 vi.mock("@supabase/ssr", () => ({ createServerClient: mocks.createServerClient }));
 vi.mock("@/shared/supabase/server", () => ({ createSupabaseServerClient: mocks.createSupabaseServerClient }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
 
 import { loginAction, signOutAction } from "@/app/(auth)/actions";
+import LoginPage from "@/app/(auth)/login/page";
 import { proxy } from "@/proxy";
 
 describe("authentication actions", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.cookies.mockResolvedValue(mocks.cookieStore);
+  });
 
   it("signs in valid credentials and redirects to the dashboard", async () => {
     const signInWithPassword = vi.fn().mockResolvedValue({ error: null });
@@ -29,13 +37,25 @@ describe("authentication actions", () => {
     expect(signInWithPassword).toHaveBeenCalledWith({ email: "learner@example.test", password: "secret" });
   });
 
-  it("redirects invalid credentials back to login", async () => {
+  it("preserves only the entered email in a short-lived HttpOnly cookie after failed login", async () => {
     mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signInWithPassword: vi.fn().mockResolvedValue({ error: new Error("invalid") }) } });
     const form = new FormData();
     form.set("email", "learner@example.test");
     form.set("password", "wrong");
 
-    await expect(loginAction(form)).rejects.toThrow("REDIRECT:/login?error=The+email+or+password+is+incorrect.");
+    await expect(loginAction(form)).rejects.toThrow("REDIRECT:/login?error=login");
+    expect(mocks.cookieStore.set).toHaveBeenCalledWith("login_recovery_email", "learner@example.test", expect.objectContaining({ httpOnly: true, maxAge: 300, path: "/login", sameSite: "lax" }));
+    expect(mocks.cookieStore.set.mock.calls.flat().join(" ")).not.toContain("wrong");
+  });
+
+  it("does not place failed-login credentials in the redirect URL", async () => {
+    const form = new FormData();
+    form.set("email", "not-an-email");
+    form.set("password", "secret-value");
+
+    await expect(loginAction(form)).rejects.toThrow("REDIRECT:/login?error=login");
+    expect(mocks.redirect).toHaveBeenLastCalledWith("/login?error=login");
+    expect(mocks.redirect.mock.calls.flat().join(" ")).not.toContain("secret-value");
   });
 
   it("invalidates the session before redirecting to login", async () => {
@@ -56,6 +76,27 @@ describe("authentication actions", () => {
     );
     expect(signOut).toHaveBeenCalledOnce();
     expect(mocks.redirect).not.toHaveBeenCalledWith("/login");
+  });
+});
+
+describe("login recovery presentation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.cookies.mockResolvedValue(mocks.cookieStore);
+  });
+
+  it("restores the safe email, keeps the password blank, and focuses the generic error", async () => {
+    mocks.cookieStore.get.mockReturnValue({ value: "learner@example.test" });
+
+    const html = renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve({ error: "login" }) }));
+
+    expect(html).toContain('name="email"');
+    expect(html).toContain('value="learner@example.test"');
+    expect(html).toContain('name="password"');
+    expect(html).not.toContain('name="password" value=');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain("No pudimos iniciar sesión.");
   });
 });
 
