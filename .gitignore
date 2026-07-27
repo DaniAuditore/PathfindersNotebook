@@ -10,3 +10,6 @@ coverage/
 supabase/.temp/
 supabase/.branches/
 .atl/
+
+# copyrighted local source material (keep other documentation PDFs trackable)
+/docs/1 Tarjeta de Amigo2.pdf

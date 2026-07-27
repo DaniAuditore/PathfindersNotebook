@@ -3,6 +3,8 @@
 import { z } from "zod";
 
 import { SupabaseCatalogFacade } from "../infrastructure/supabase-catalog-facade";
+import { ProvisionOfficialCatalog } from "../application/provision-official-catalog";
+import amigoRegularSnapshot from "../infrastructure/official/amigo-regular.es.json";
 import { requireRole } from "@/shared/auth/session";
 import { writeActionLog } from "@/shared/observability/action-log";
 
@@ -27,4 +29,19 @@ export async function publishCatalogAction(input: unknown) {
   });
 
   return catalog;
+}
+
+const provisionOfficialSchema = z.object({ clubId: z.uuid() });
+
+export async function provisionOfficialAmigoAction(input: unknown) {
+  const command = provisionOfficialSchema.parse(input);
+  await requireRole(command.clubId, ["admin"]);
+  const result = await new ProvisionOfficialCatalog(new SupabaseCatalogFacade()).execute({
+    clubId: command.clubId,
+    snapshot: amigoRegularSnapshot,
+  });
+
+  if (!result.ok) return result;
+
+  return result;
 }
