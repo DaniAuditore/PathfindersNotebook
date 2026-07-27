@@ -56,10 +56,37 @@ describe("UX progress rendering", () => {
     expect(html).toContain("Resubmit");
   });
 
-  it("renders approve and required request-changes controls for submitted work", async () => {
-    mocks.reviewQueue.mockResolvedValue([{ progressId: "progress-a", attemptId: "attempt-a", studentName: "Learner A", requirementTitle: "Reading", submissionText: "Done", submittedAt: "2026-07-25" }]);
+  it("renders sectioned compound requirements without a direct text form", async () => {
+    mocks.learner.mockResolvedValue({
+      studentId: "student-a", displayName: "Learner A", enrollments: [{
+        enrollmentId: "enrollment-a", catalogTitle: "Amigo", schoolYear: 2026, approvedPercentage: 0, requirements: [],
+        sections: [{ sectionId: "section-a", title: "Generales", position: 0, approvedPercentage: 0, requirements: [{ progressId: "root-progress", requirementId: "root", title: "Bible checklist", instructions: "", requirementType: "compound", requiresEvidence: false, status: "draft", reviewReason: null, history: [], modalities: ["reading"], completionSemantics: "all_children", childRole: null, complete: false, canSubmitText: false, children: [{ progressId: "child-progress", requirementId: "child", title: "Genesis 1", instructions: "", requirementType: "text", requiresEvidence: false, status: "draft", reviewReason: null, history: [], modalities: ["reading"], completionSemantics: "direct", childRole: "checklist_item", complete: false, canSubmitText: false, children: [] }] }] }],
+      }],
+    });
+
+    const html = renderToStaticMarkup(await StudentPage({ params: Promise.resolve({ studentId: "student-a" }), searchParams: Promise.resolve({}) }));
+    expect(html).toContain("Generales");
+    expect(html).toContain("0% approved in this section");
+    expect(html).toContain("Derived from children: Not complete");
+    expect(html).toContain("Genesis 1");
+    expect(html).not.toContain("Submit for review");
+  });
+
+  it("renders a child review attempt with its root Part of context", async () => {
+    mocks.reviewQueue.mockResolvedValue([{
+      progressId: "progress-a",
+      attemptId: "attempt-a",
+      studentName: "Learner A",
+      requirementTitle: "Genesis 1",
+      rootRequirementTitle: "Bible checklist",
+      childContext: "Part of: Bible checklist",
+      submissionText: "Done",
+      submittedAt: "2026-07-25",
+    }]);
 
     const html = renderToStaticMarkup(await ReviewsPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain("Learner A: Genesis 1");
+    expect(html).toContain("Part of: Bible checklist");
     expect(html).toContain("Approve");
     expect(html).toContain("Request changes");
     expect(html).toContain("required");

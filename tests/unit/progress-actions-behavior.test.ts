@@ -46,8 +46,9 @@ describe("progress server actions", () => {
 
   it("pre-resolves render scope, submits once, and revalidates affected learner views", async () => {
     mocks.createSupabaseServerClient.mockResolvedValue(queryClient({
-      requirement_progress: { enrollment_id: "enrollment-a" },
+      requirement_progress: { enrollment_id: "enrollment-a", requirement_id: "requirement-a" },
       enrollments: { student_id: "student-a" },
+      requirements: { parent_requirement_id: null, progress_mode: "direct", completion_semantics: "direct", modalities: ["reading"], requires_evidence: false },
     }));
     mocks.submit.mockResolvedValue({ attemptId, enrollmentId: "enrollment-a" });
 
@@ -55,6 +56,17 @@ describe("progress server actions", () => {
     expect(mocks.submit).toHaveBeenCalledWith({ progressId, submissionText: "completed", actorId: "guardian-a", evidenceIds: [] });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/students/student-a");
+  });
+
+  it("rejects compound, practical, or evidence-required text commands before the mutation RPC", async () => {
+    mocks.createSupabaseServerClient.mockResolvedValue(queryClient({
+      requirement_progress: { enrollment_id: "enrollment-a", requirement_id: "requirement-a" },
+      enrollments: { student_id: "student-a" },
+      requirements: { parent_requirement_id: null, progress_mode: "derived", completion_semantics: "all_children", modalities: ["practical_in_person"], requires_evidence: true },
+    }));
+
+    await expect(submitProgressAction({ progressId, submissionText: "Done" })).rejects.toThrow("cannot be submitted as text");
+    expect(mocks.submit).not.toHaveBeenCalled();
   });
 
   it("denies a foreign-club review before invoking the mutation RPC", async () => {

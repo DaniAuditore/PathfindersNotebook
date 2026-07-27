@@ -16,7 +16,7 @@ import type { ProgressStatus } from "../domain/progress";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
 type EnrollmentRow = { id: string; student_id: string; catalog_id: string; catalog_version_id: string; school_year: number };
-type RequirementDbRow = { id: string; parent_requirement_id: string | null; optional: boolean; weight: number | string; completion_rule: "all" | "any" | "minimum_n" | null; minimum_children: number | null; allow_reuse: boolean; title: string; instructions: string; requirement_type: string; requires_evidence: boolean };
+type RequirementDbRow = { id: string; parent_requirement_id: string | null; optional: boolean; weight: number | string; completion_rule: "all" | "any" | "minimum_n" | null; minimum_children: number | null; allow_reuse: boolean; title: string; instructions: string; requirement_type: string; requires_evidence: boolean; section_id: string | null; source_code: string | null; modalities: string[] | null; progress_mode: "direct" | "derived" | null; completion_semantics: "direct" | "all_children" | "at_least_one" | "at_least_n" | null; completion_threshold: number | null; child_role: "step" | "option" | "checklist_item" | null; position: number };
 type ProgressDbRow = { id: string; enrollment_id: string; requirement_id: string; status: ProgressStatus; accepted_credit_key: string | null };
 type AttemptDbRow = { id: string; progress_id: string; attempt_number: number; submission_text: string | null; submitted_at: string; decision: "accepted" | "rejected" | null; decision_reason: string | null };
 
@@ -76,18 +76,26 @@ export class SupabaseProgressReader {
     const [{ data: attempts, error: attemptError }, { data: students, error: studentError }, { data: requirements, error: requirementError }] = await Promise.all([
       supabase.from("progress_attempts").select("id, progress_id, submission_text, submitted_at").in("progress_id", ids(progressRows)).is("decision", null).order("submitted_at", { ascending: true }),
       supabase.from("students").select("id, display_name").in("id", enrollmentRows.map((row) => row.student_id)),
-      supabase.from("requirements").select("id, title").in("id", progressRows.map((row) => row.requirement_id)),
+      supabase.from("requirements").select("id, title, parent_requirement_id").in("id", progressRows.map((row) => row.requirement_id)),
     ]);
     const attemptRows = requireData(attempts, attemptError, "Unable to load pending attempts.") as { id: string; progress_id: string; submission_text: string | null; submitted_at: string }[];
     const studentNames = new Map((requireData(students, studentError, "Unable to load learner names.") as { id: string; display_name: string }[]).map((row) => [row.id, row.display_name]));
-    const requirementTitles = new Map((requireData(requirements, requirementError, "Unable to load requirement titles.") as { id: string; title: string }[]).map((row) => [row.id, row.title]));
+    const requirementRows = requireData(requirements, requirementError, "Unable to load requirement titles.") as { id: string; title: string; parent_requirement_id: string | null }[];
+    const requirementTitles = new Map(requirementRows.map((row) => [row.id, row.title]));
+    const parents = requirementRows.filter((row) => row.parent_requirement_id).map((row) => row.parent_requirement_id!);
+    const { data: roots, error: rootError } = parents.length === 0
+      ? { data: [], error: null }
+      : await supabase.from("requirements").select("id, title").in("id", parents);
+    const rootTitles = new Map((requireData(roots, rootError, "Unable to load root requirement titles.") as { id: string; title: string }[]).map((row) => [row.id, row.title]));
     const enrollmentById = new Map(enrollmentRows.map((row) => [row.id, row]));
     const progressById = new Map(progressRows.map((row) => [row.id, row]));
     return attemptRows.flatMap((attempt) => {
       const progressRow = progressById.get(attempt.progress_id);
       const enrollment = progressRow ? enrollmentById.get(progressRow.enrollment_id) : undefined;
       if (!progressRow || !enrollment) return [];
-      return [{ progressId: progressRow.id, attemptId: attempt.id, studentName: studentNames.get(enrollment.student_id) ?? "Learner", requirementTitle: requirementTitles.get(progressRow.requirement_id) ?? "Requirement", submissionText: attempt.submission_text, submittedAt: attempt.submitted_at }];
+      const requirement = requirementRows.find((row) => row.id === progressRow.requirement_id);
+      const rootRequirementTitle = requirement?.parent_requirement_id ? rootTitles.get(requirement.parent_requirement_id) ?? null : null;
+      return [{ progressId: progressRow.id, attemptId: attempt.id, studentName: studentNames.get(enrollment.student_id) ?? "Learner", requirementTitle: requirementTitles.get(progressRow.requirement_id) ?? "Requirement", rootRequirementTitle, childContext: rootRequirementTitle ? `Part of: ${rootRequirementTitle}` : null, submissionText: attempt.submission_text, submittedAt: attempt.submitted_at }];
     });
   }
 
@@ -98,10 +106,11 @@ export class SupabaseProgressReader {
   }
 
   private async enrollment(enrollment: EnrollmentRow, supabase: SupabaseClient): Promise<EnrollmentProgressReadModel> {
-    const [{ data: catalog, error: catalogError }, { data: requirements, error: requirementError }, { data: progress, error: progressError }] = await Promise.all([
+    const [{ data: catalog, error: catalogError }, { data: requirements, error: requirementError }, { data: progress, error: progressError }, { data: sections, error: sectionError }] = await Promise.all([
       supabase.from("catalogs").select("title").eq("id", enrollment.catalog_id).single(),
-      supabase.from("requirements").select("id, parent_requirement_id, optional, weight, completion_rule, minimum_children, allow_reuse, title, instructions, requirement_type, requires_evidence").eq("catalog_version_id", enrollment.catalog_version_id).order("position"),
+      supabase.from("requirements").select("id, parent_requirement_id, optional, weight, completion_rule, minimum_children, allow_reuse, title, instructions, requirement_type, requires_evidence, section_id, source_code, modalities, progress_mode, completion_semantics, completion_threshold, child_role, position").eq("catalog_version_id", enrollment.catalog_version_id).order("position"),
       supabase.from("requirement_progress").select("id, enrollment_id, requirement_id, status, accepted_credit_key").eq("enrollment_id", enrollment.id),
+      supabase.from("catalog_sections").select("id, title, position").eq("catalog_version_id", enrollment.catalog_version_id).order("position"),
     ]);
     const requirementRows = requireData(requirements, requirementError, "Unable to load enrollment requirements.") as RequirementDbRow[];
     const progressRows = requireData(progress, progressError, "Unable to load enrollment progress.") as ProgressDbRow[];
@@ -110,8 +119,8 @@ export class SupabaseProgressReader {
       const result = await supabase.from("progress_attempts").select("id, progress_id, attempt_number, submission_text, submitted_at, decision, decision_reason").in("progress_id", ids(progressRows)).order("attempt_number", { ascending: false });
       attempts = requireData(result.data, result.error, "Unable to load progress history.") as AttemptDbRow[];
     }
-    const mappedRequirements: ProgressRequirementRow[] = requirementRows.map((row) => ({ id: row.id, parentRequirementId: row.parent_requirement_id, optional: row.optional, weight: Number(row.weight), completionRule: row.completion_rule, minimumChildren: row.minimum_children, allowReuse: row.allow_reuse, title: row.title, instructions: row.instructions, requirementType: row.requirement_type, requiresEvidence: row.requires_evidence }));
+    const mappedRequirements: ProgressRequirementRow[] = requirementRows.map((row) => ({ id: row.id, parentRequirementId: row.parent_requirement_id, optional: row.optional, weight: Number(row.weight), completionRule: row.completion_rule, minimumChildren: row.minimum_children, allowReuse: row.allow_reuse, sectionId: row.section_id, sourceCode: row.source_code, modalities: row.modalities as ProgressRequirementRow["modalities"], progressMode: row.progress_mode, completionSemantics: row.completion_semantics, completionThreshold: row.completion_threshold, childRole: row.child_role, position: row.position, title: row.title, instructions: row.instructions, requirementType: row.requirement_type, requiresEvidence: row.requires_evidence }));
     const mappedProgress: ProgressRow[] = progressRows.map((row) => ({ progressId: row.id, requirementId: row.requirement_id, status: row.status, acceptedCreditKey: row.accepted_credit_key }));
-    return buildEnrollmentProgressReadModel({ enrollmentId: enrollment.id, catalogTitle: (requireData(catalog, catalogError, "Unable to load the enrolled catalog.") as { title: string }).title, schoolYear: enrollment.school_year, requirements: mappedRequirements, progress: mappedProgress, attempts: groupAttempts(attempts) });
+    return buildEnrollmentProgressReadModel({ enrollmentId: enrollment.id, catalogTitle: (requireData(catalog, catalogError, "Unable to load the enrolled catalog.") as { title: string }).title, schoolYear: enrollment.school_year, requirements: mappedRequirements, progress: mappedProgress, attempts: groupAttempts(attempts), sections: requireData(sections, sectionError, "Unable to load catalog sections.") as { id: string; title: string; position: number }[] });
   }
 }
