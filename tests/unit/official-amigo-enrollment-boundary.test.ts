@@ -14,6 +14,12 @@ function clientWith(results: Record<string, Result[]>) {
   return {
     calls,
     client: {
+      rpc(name: string, args: unknown) {
+        calls.push({ table: name, method: "rpc", args: [args] });
+        const result = results[name]?.shift();
+        if (!result) throw new Error(`No result queued for RPC ${name}`);
+        return Promise.resolve(result);
+      },
       from(table: string) {
         const result = results[table]?.shift();
         if (!result) throw new Error(`No result queued for ${table}`);
@@ -42,16 +48,15 @@ describe("official Amigo enrollment boundary", () => {
       catalogs: [{ data: { id: "catalog-a" }, error: null }],
       catalog_versions: [{ data: { id: "version-a" }, error: null }],
       requirements: [{ data: Array.from({ length: 121 }, (_, index) => ({ id: String(index), parent_requirement_id: index < 25 ? null : "parent" })), error: null }],
-      enrollments: [{ data: null, error: null }, { data: { id: "enrollment-a" }, error: null }],
-      requirement_progress: [{ data: null, error: null, count: 121 }],
+      enroll_official_amigo_student: [{ data: { enrollmentId: "enrollment-a", existing: false }, error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
-    await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, "admin-a", 2026))
+    await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, 2026))
       .resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: false });
     expect(fake.calls).toContainEqual({ table: "catalogs", method: "eq", args: ["source_catalog_code", "amigo.regular"] });
     expect(fake.calls).toContainEqual({ table: "catalog_versions", method: "eq", args: ["source_revision_key", "dsa-amigo-official-card-es-undated"] });
-    expect(fake.calls).toContainEqual({ table: "enrollments", method: "insert", args: [expect.objectContaining({ catalog_id: "catalog-a", catalog_version_id: "version-a", club_id: "club-a" })] });
+    expect(fake.calls).toContainEqual({ table: "enroll_official_amigo_student", method: "rpc", args: [{ target_student_id: studentId, target_school_year: 2026 }] });
   });
 
   it("returns the existing enrollment without inserting another row", async () => {
@@ -60,13 +65,13 @@ describe("official Amigo enrollment boundary", () => {
       catalogs: [{ data: { id: "catalog-a" }, error: null }],
       catalog_versions: [{ data: { id: "version-a" }, error: null }],
       requirements: [{ data: Array.from({ length: 121 }, (_, index) => ({ id: String(index), parent_requirement_id: index < 25 ? null : "parent" })), error: null }],
-      enrollments: [{ data: { id: "enrollment-a" }, error: null }],
+      enroll_official_amigo_student: [{ data: { enrollmentId: "enrollment-a", existing: true }, error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
-    await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, "admin-a", 2026))
+    await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, 2026))
       .resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: true });
-    expect(fake.calls.some((call) => call.table === "enrollments" && call.method === "insert")).toBe(false);
+    expect(fake.calls).toContainEqual({ table: "enroll_official_amigo_student", method: "rpc", args: [{ target_student_id: studentId, target_school_year: 2026 }] });
   });
 
   it("finds the provisioned catalog and keeps a student eligible when only a withdrawn legacy enrollment exists", async () => {

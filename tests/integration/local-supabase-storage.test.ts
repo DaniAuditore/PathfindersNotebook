@@ -30,6 +30,7 @@ interface PreparedEvidence {
 
 interface EvidenceFixtures {
   clubId: string;
+  studentRecordId: string;
   driftClubId: string;
   partialClubId: string;
   admin: AuthFixture;
@@ -275,6 +276,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
 
     fixtures = {
       clubId,
+      studentRecordId,
       driftClubId,
       partialClubId,
       admin,
@@ -404,6 +406,79 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     });
     expect(retry.error).toBeNull();
     expect(retry.data).toEqual(calls[0].data);
+  }, LOCAL_TEST_TIMEOUT_MS);
+
+  it("denies raw enrollment writes and uses the authenticated enrollment RPC", async () => {
+    const { data: catalog, error: catalogError } = await adminClient
+      .from("catalogs")
+      .select("id")
+      .eq("club_id", fixtures.clubId)
+      .eq("source_catalog_code", "amigo.regular")
+      .single();
+    failOnApiError("Unable to load the provisioned official catalog", catalogError);
+    if (!catalog) throw new Error("Provisioned official catalog was not returned.");
+
+    const { data: version, error: versionError } = await adminClient
+      .from("catalog_versions")
+      .select("id")
+      .eq("catalog_id", catalog.id)
+      .eq("source_revision_key", amigoRegularSnapshot.source.revisionKey)
+      .eq("status", "published")
+      .single();
+    failOnApiError("Unable to load the provisioned official version", versionError);
+    if (!version) throw new Error("Provisioned official version was not returned.");
+
+    const directInsert = await adminClient
+      .from("enrollments")
+      .insert({
+        club_id: fixtures.clubId,
+        student_id: fixtures.studentRecordId,
+        catalog_id: catalog.id,
+        catalog_version_id: version.id,
+        school_year: 2026,
+        enrolled_by: fixtures.admin.id,
+      });
+    expect(directInsert.data).toBeNull();
+    expect(directInsert.error).not.toBeNull();
+
+    const { data: enrollment, error: enrollmentError } = await adminClient.rpc("enroll_official_amigo_student", {
+      target_student_id: fixtures.studentRecordId,
+      target_school_year: 2026,
+    });
+    failOnApiError("Authenticated official enrollment RPC failed", enrollmentError);
+    expect(enrollment).toMatchObject({ existing: false });
+    if (!enrollment || typeof enrollment.enrollmentId !== "string") {
+      throw new Error("Authenticated official enrollment RPC returned no enrollment ID.");
+    }
+
+    const directUpdate = await adminClient
+      .from("enrollments")
+      .update({ status: "withdrawn" })
+      .eq("id", enrollment.enrollmentId);
+    expect(directUpdate.data).toBeNull();
+    expect(directUpdate.error).not.toBeNull();
+
+    const { count, error: progressError } = await adminClient
+      .from("requirement_progress")
+      .select("id", { count: "exact", head: true })
+      .eq("enrollment_id", enrollment.enrollmentId);
+    failOnApiError("Unable to count official enrollment progress", progressError);
+    expect(count).toBe(121);
+    const retry = await adminClient.rpc("enroll_official_amigo_student", {
+      target_student_id: fixtures.studentRecordId,
+      target_school_year: 2026,
+    });
+    expect(retry.error).toBeNull();
+    expect(retry.data).toEqual({ enrollmentId: enrollment.enrollmentId, existing: true });
+
+    for (const client of [foreignClient, anonymousClient]) {
+      const denied = await client.rpc("enroll_official_amigo_student", {
+        target_student_id: fixtures.studentRecordId,
+        target_school_year: 2027,
+      });
+      expect(denied.data).toBeNull();
+      expect(denied.error?.code).toBe("42501");
+    }
   }, LOCAL_TEST_TIMEOUT_MS);
 
   it("rejects canonical drift and unauthorized direct RPC actors without state or audit", async () => {

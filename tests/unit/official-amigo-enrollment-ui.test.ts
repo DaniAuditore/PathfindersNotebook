@@ -6,12 +6,15 @@ const mocks = vi.hoisted(() => ({
   requireRole: vi.fn(),
   listEligibleAdminStudents: vi.fn(),
   enrollStudent: vi.fn(),
-  writeActionLog: vi.fn(),
-  createSupabaseServerClient: vi.fn(),
+    writeActionLog: vi.fn(),
+    createSupabaseServerClient: vi.fn(),
+    revalidatePath: vi.fn(),
+    redirect: vi.fn(),
 }));
 
 vi.mock("@/shared/auth/session", () => ({ requireSession: mocks.requireSession, requireRole: mocks.requireRole }));
 vi.mock("@/modules/enrollment/infrastructure/supabase-official-amigo-enrollment", () => ({
+  OfficialAmigoEnrollmentFailure: class extends Error {},
   SupabaseOfficialAmigoEnrollment: class {
     listEligibleAdminStudents = mocks.listEligibleAdminStudents;
     enrollStudent = mocks.enrollStudent;
@@ -19,9 +22,11 @@ vi.mock("@/modules/enrollment/infrastructure/supabase-official-amigo-enrollment"
 }));
 vi.mock("@/shared/observability/action-log", () => ({ writeActionLog: mocks.writeActionLog }));
 vi.mock("@/shared/supabase/server", () => ({ createSupabaseServerClient: mocks.createSupabaseServerClient }));
+vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
+vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
 import EnrollmentsPage from "@/app/(protected)/enrollments/page";
-import { enrollOfficialAmigoStudentAction } from "@/modules/enrollment/presentation/official-amigo-actions";
+import { enrollOfficialAmigoStudentAction, enrollOfficialAmigoStudentFormAction } from "@/modules/enrollment/presentation/official-amigo-actions";
 
 const studentId = "20000000-0000-4000-8000-000000000001";
 const clubId = "10000000-0000-4000-8000-000000000001";
@@ -43,6 +48,7 @@ describe("official Amigo operational enrollment", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireSession.mockResolvedValue({ id: "admin-a" });
+    mocks.redirect.mockImplementation(() => { throw new Error("redirect"); });
   });
 
   it("renders only server-derived eligible students and accessible learner links", async () => {
@@ -84,7 +90,7 @@ describe("official Amigo operational enrollment", () => {
 
     await expect(enrollOfficialAmigoStudentAction({ studentId, clubId: "forged-club" })).resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: false });
     expect(mocks.requireRole).toHaveBeenCalledWith(clubId, ["admin"]);
-    expect(mocks.enrollStudent).toHaveBeenCalledWith(studentId, "admin-a", expect.any(Number));
+    expect(mocks.enrollStudent).toHaveBeenCalledWith(studentId, expect.any(Number));
     expect(mocks.writeActionLog).toHaveBeenCalledWith(expect.objectContaining({ clubId, entityId: "enrollment-a" }));
   });
 
@@ -103,5 +109,25 @@ describe("official Amigo operational enrollment", () => {
     await expect(enrollOfficialAmigoStudentAction({ studentId })).rejects.toThrow("Eligible student not found.");
     expect(mocks.requireRole).not.toHaveBeenCalled();
     expect(mocks.enrollStudent).not.toHaveBeenCalled();
+  });
+
+  it("redirects with the generic safe error and emits only redacted structured diagnostics", async () => {
+    mocks.createSupabaseServerClient.mockResolvedValue(studentClient({ club_id: clubId }));
+    mocks.requireRole.mockResolvedValue({ id: "admin-a" });
+    mocks.enrollStudent.mockRejectedValue(new Error("database payload with token=secret and STG Alumno"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const form = new FormData();
+    form.set("studentId", studentId);
+
+    await expect(enrollOfficialAmigoStudentFormAction(form)).rejects.toThrow("redirect");
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/enrollments?error=Official%20Amigo%20enrollment%20could%20not%20be%20completed.");
+    expect(errorSpy).toHaveBeenCalledWith({
+      event: "official_amigo_enrollment_failed",
+      code: "official_amigo_enrollment_unexpected",
+      context: {},
+    });
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain("secret");
+    errorSpy.mockRestore();
   });
 });

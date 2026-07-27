@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(9);
+select plan(14);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -56,10 +56,47 @@ select ok(
 );
 
 select ok(
+  not has_table_privilege('authenticated', 'public.enrollments', 'INSERT'),
+  'authenticated has no direct enrollment insert privilege'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.enrollments', 'UPDATE'),
+  'authenticated has no direct enrollment update privilege'
+);
+
+select throws_ok(
+  $$insert into public.enrollments (
+    club_id, student_id, catalog_id, catalog_version_id, school_year, enrolled_by
+  ) values (
+    test_fixtures.id('club_a'), test_fixtures.id('student_a'), test_fixtures.id('catalog_a'),
+    test_fixtures.id('catalog_version_a'), 2027, test_fixtures.id('admin_a')
+  )$$,
+  '42501',
+  'permission denied for table enrollments',
+  'an administrator raw insert without a returned row is denied'
+);
+
+select throws_ok(
+  $$update public.enrollments set status = 'withdrawn' where id = test_fixtures.id('enrollment_a')$$,
+  '42501',
+  'permission denied for table enrollments',
+  'an administrator raw update is denied'
+);
+
+select ok(
   not has_table_privilege('authenticated', 'public.audit_log', 'INSERT'),
   'authenticated cannot directly insert audit records'
 );
 
 reset role;
+select is(
+  (select count(*)::integer from pg_policies where schemaname = 'public' and tablename = 'enrollments' and policyname in (
+    'admins and instructors create enrollments',
+    'admins and instructors update enrollments'
+  )),
+  0,
+  'no legacy permissive enrollment write policies remain'
+);
 select * from finish();
 rollback;
