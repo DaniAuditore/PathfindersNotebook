@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(4);
+select plan(7);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -32,6 +32,37 @@ select throws_ok(
   '23514',
   'enrollment catalog must belong to the enrollment club',
   'a Club A administrator cannot enroll with a Club B catalog'
+);
+
+select lives_ok(
+  $$
+    update public.enrollments
+    set status = 'withdrawn'
+    where id = test_fixtures.id('enrollment_a');
+
+    insert into public.catalogs (id, club_id, class_type, title) values
+      ('40000000-0000-0000-0000-000000000003', test_fixtures.id('club_a'), 'regular', 'Fixture Official Regular Amigo');
+    insert into public.catalog_versions (id, catalog_id, version_number, status, published_at) values
+      ('50000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000003', 1, 'published', now());
+    insert into public.enrollments (club_id, student_id, catalog_id, catalog_version_id, school_year, enrolled_by) values
+      (test_fixtures.id('club_a'), test_fixtures.id('student_a'), '40000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000003', 2026, test_fixtures.id('admin_a'))
+  $$,
+  'a withdrawn legacy enrollment does not prevent a separate active regular enrollment'
+);
+
+select is(
+  (select status from public.enrollments where catalog_id = '40000000-0000-0000-0000-000000000003' and student_id = test_fixtures.id('student_a')),
+  'active'::public.enrollment_status,
+  'the separate regular enrollment remains active'
+);
+
+select throws_ok(
+  $$insert into public.enrollments (club_id, student_id, catalog_id, catalog_version_id, school_year, enrolled_by) values (
+    test_fixtures.id('club_a'), test_fixtures.id('student_a'), '40000000-0000-0000-0000-000000000003',
+    '50000000-0000-0000-0000-000000000003', 2026, test_fixtures.id('admin_a')
+  )$$,
+  '23505', null,
+  'the same student cannot receive a second same-year enrollment for the same regular catalog'
 );
 
 reset role;

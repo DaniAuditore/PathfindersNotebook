@@ -20,6 +20,8 @@ function clientWith(results: Record<string, Result[]>) {
         const query = {
           select: (...args: unknown[]) => { calls.push({ table, method: "select", args }); return query; },
           eq: (...args: unknown[]) => { calls.push({ table, method: "eq", args }); return query; },
+          in: (...args: unknown[]) => { calls.push({ table, method: "in", args }); return query; },
+          order: (...args: unknown[]) => { calls.push({ table, method: "order", args }); return query; },
           insert: (...args: unknown[]) => { calls.push({ table, method: "insert", args }); return query; },
           maybeSingle: () => Promise.resolve(result),
           single: () => Promise.resolve(result),
@@ -47,7 +49,7 @@ describe("official Amigo enrollment boundary", () => {
 
     await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, "admin-a", 2026))
       .resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: false });
-    expect(fake.calls).toContainEqual({ table: "catalogs", method: "eq", args: ["source_catalog_code", "amigo.regular.es"] });
+    expect(fake.calls).toContainEqual({ table: "catalogs", method: "eq", args: ["source_catalog_code", "amigo.regular"] });
     expect(fake.calls).toContainEqual({ table: "catalog_versions", method: "eq", args: ["source_revision_key", "dsa-amigo-official-card-es-undated"] });
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "insert", args: [expect.objectContaining({ catalog_id: "catalog-a", catalog_version_id: "version-a", club_id: "club-a" })] });
   });
@@ -65,5 +67,22 @@ describe("official Amigo enrollment boundary", () => {
     await expect(new SupabaseOfficialAmigoEnrollment().enrollStudent(studentId, "admin-a", 2026))
       .resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: true });
     expect(fake.calls.some((call) => call.table === "enrollments" && call.method === "insert")).toBe(false);
+  });
+
+  it("finds the provisioned catalog and keeps a student eligible when only a withdrawn legacy enrollment exists", async () => {
+    const fake = clientWith({
+      memberships: [{ data: [{ club_id: "club-a" }], error: null }],
+      clubs: [{ data: [{ id: "club-a", name: "Club A" }], error: null }],
+      catalogs: [{ data: { id: "official-catalog-a" }, error: null }],
+      catalog_versions: [{ data: { id: "official-version-a" }, error: null }],
+      students: [{ data: [{ id: studentId, club_id: "club-a", display_name: "Ana" }], error: null }],
+      enrollments: [{ data: [], error: null }],
+    });
+    createSupabaseServerClient.mockResolvedValue(fake.client);
+
+    await expect(new SupabaseOfficialAmigoEnrollment().listEligibleAdminStudents("admin-a", 2026))
+      .resolves.toEqual([{ id: "club-a", name: "Club A", students: [{ id: studentId, displayName: "Ana" }] }]);
+    expect(fake.calls).toContainEqual({ table: "catalogs", method: "eq", args: ["source_catalog_code", "amigo.regular"] });
+    expect(fake.calls).toContainEqual({ table: "enrollments", method: "eq", args: ["status", "active"] });
   });
 });
