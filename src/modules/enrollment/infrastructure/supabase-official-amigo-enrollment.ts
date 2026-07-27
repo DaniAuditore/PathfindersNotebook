@@ -2,7 +2,8 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
-const officialCatalogCode = "amigo.regular.es";
+// Must match `level.levelCode` persisted by provision_official_amigo_catalog.
+const officialCatalogCode = "amigo.regular";
 const officialRevisionKey = "dsa-amigo-official-card-es-undated";
 
 export interface EligibleOfficialAmigoStudent {
@@ -54,6 +55,7 @@ export class SupabaseOfficialAmigoEnrollment {
         .select("student_id")
         .eq("catalog_id", catalog.catalogId)
         .eq("school_year", schoolYear)
+        .eq("status", "active")
         .in("student_id", students.map((student) => student.id));
       if (enrollmentError || !enrollments) throw new Error("Unable to load official Amigo enrollments.");
       const enrolledStudentIds = new Set(enrollments.map((enrollment) => enrollment.student_id));

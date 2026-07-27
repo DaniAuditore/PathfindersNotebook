@@ -58,6 +58,16 @@ describe("official Amigo operational enrollment", () => {
     expect(html).toContain('role="status"');
   });
 
+  it("renders a student returned as eligible despite withdrawn legacy history", async () => {
+    mocks.listEligibleAdminStudents.mockResolvedValue([{ id: clubId, name: "STG Club A", students: [{ id: studentId, displayName: "STG Alumno" }] }]);
+
+    const html = renderToStaticMarkup(await EnrollmentsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(html).toContain("STG Alumno");
+    expect(html).toContain("Enroll in official regular Amigo");
+    expect(html).not.toContain("No eligible students are available");
+  });
+
   it("does not expose enrollment controls without an eligible server-derived student", async () => {
     mocks.listEligibleAdminStudents.mockResolvedValue([]);
 
