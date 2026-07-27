@@ -101,6 +101,17 @@ describe("Supabase migration security contracts", () => {
     expect(remediation).toContain("raise exception 'a rejection reason is required'");
   });
 
+  it("blocks derived and practical requirements at the authenticated submission RPC while preserving evidence delivery", () => {
+    const guard = migration("020_guard_text_submission_modes.sql");
+
+    expect(guard).toContain("target_requirement.progress_mode = 'derived'");
+    expect(guard).toContain("target_requirement.completion_semantics in ('all_children', 'at_least_one', 'at_least_n')");
+    expect(guard).toContain("array['practical_in_person']::text[]");
+    expect(guard).toContain("this requirement cannot be submitted as text");
+    expect(guard).toContain("this requirement requires clean evidence");
+    expect(guard).toContain("insert into public.attempt_evidence");
+  });
+
   it("relies on transactional database audits instead of post-commit action audits", () => {
     const actions = readFileSync(resolve(process.cwd(), "src", "modules", "review", "presentation", "actions.ts"), "utf8");
     const facade = readFileSync(resolve(process.cwd(), "src", "modules", "review", "infrastructure", "supabase-review-facade.ts"), "utf8");

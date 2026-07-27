@@ -17,6 +17,7 @@ export interface ProgressRequirement {
   progressMode?: "direct" | "derived" | null;
   completionSemantics?: CompletionSemantics | null;
   completionThreshold?: number | null;
+  childRole?: "step" | "option" | "checklist_item" | null;
 }
 
 export interface ProgressRecord {

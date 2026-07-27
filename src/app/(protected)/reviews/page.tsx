@@ -13,6 +13,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
       {queue.length === 0 ? <p>No submitted attempts are waiting in your clubs.</p> : queue.map((item) => (
         <article key={item.attemptId}>
           <h2>{item.studentName}: {item.requirementTitle}</h2>
+          {item.childContext ? <p>{item.childContext}</p> : null}
           <p>{item.submissionText || "No text was submitted."}</p>
           <form action={reviewProgressFormAction}>
             <input type="hidden" name="progressId" value={item.progressId} />
