@@ -39,11 +39,10 @@ describe("official Amigo operational provisioning", () => {
 
     const html = renderToStaticMarkup(await ClassesPage({ searchParams: Promise.resolve({ message: "Official regular Amigo is ready for this club." }) }));
 
-    expect(html).toContain("Official Amigo provisioning");
-    expect(html).toContain("immutable official regular Amigo catalog");
-    expect(html).toContain("This is not generic catalog authoring.");
+    expect(html).toContain("Preparación oficial de Amigo");
+    expect(html).toContain("catálogo oficial regular e inmutable de Amigo");
     expect(html).toContain("Club A");
-    expect(html).toContain("Provision official regular Amigo");
+    expect(html).toContain("Preparar Amigo regular oficial");
     expect(html).toContain('role="status"');
     expect(html).toContain('href="/dashboard"');
   });
@@ -53,8 +52,8 @@ describe("official Amigo operational provisioning", () => {
 
     const html = renderToStaticMarkup(await ClassesPage({ searchParams: Promise.resolve({}) }));
 
-    expect(html).toContain("You need an administrator membership");
-    expect(html).not.toContain("Provision official regular Amigo</button>");
+    expect(html).toContain("Necesitás una membresía de administrador");
+    expect(html).not.toContain("Preparar Amigo regular oficial</button>");
   });
 
   it("re-authorizes the submitted club on the server before invoking the canonical provision use case", async () => {

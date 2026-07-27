@@ -1,27 +1,20 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signOutAction } from "@/app/(auth)/actions";
 import { AuthorizationError, requireSession } from "@/shared/auth/session";
+import { navigationCapabilities } from "@/shared/navigation/navigation-capabilities";
+import { AppShell } from "@/shared/ui/app-shell";
+import { SubmitButton } from "@/shared/ui/submit-button";
 
 export default async function ProtectedLayout({ children }: Readonly<{ children: ReactNode }>) {
+  let actor;
   try {
-    await requireSession();
+    actor = await requireSession();
   } catch (error) {
     if (error instanceof AuthorizationError) redirect("/login");
     throw error;
   }
-
-  return (
-    <>
-      <header>
-        <nav aria-label="Main navigation">
-          <Link href="/dashboard">Dashboard</Link>{" | "}<Link href="/classes">Classes</Link>{" | "}<Link href="/reviews">Reviews</Link>
-          <form action={signOutAction} style={{ display: "inline", marginInlineStart: "1rem" }}><button type="submit">Sign out</button></form>
-        </nav>
-      </header>
-      {children}
-    </>
-  );
+  const items = await navigationCapabilities(actor);
+  return <AppShell email={actor.email} items={items} signOut={<form action={signOutAction}><SubmitButton className="shell__signout" pendingLabel="Cerrando sesión…">Cerrar sesión</SubmitButton></form>}>{children}</AppShell>;
 }

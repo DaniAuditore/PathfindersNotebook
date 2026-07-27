@@ -33,10 +33,10 @@ describe("UX progress rendering", () => {
 
     const html = renderToStaticMarkup(await DashboardPage({ searchParams: Promise.resolve({ error: "Sign out failed. You are still signed in. Please try again." }) }));
     expect(html).toContain('role="alert"');
-    expect(html).toContain("Sign out failed. You are still signed in. Please try again.");
-    expect(html).toContain("Open submitted-attempt review queue");
+    expect(html).toContain("No pudimos completar esa acción. Intentá de nuevo.");
+    expect(html).toContain("Abrir cola de revisiones");
     expect(html).toContain("Learner A");
-    expect(html).toContain("50% approved");
+    expect(html).toContain("50% aprobado");
   });
 
   it("renders rejection history and a resubmission form only for text work", async () => {
@@ -50,10 +50,10 @@ describe("UX progress rendering", () => {
     });
 
     const html = renderToStaticMarkup(await StudentPage({ params: Promise.resolve({ studentId: "student-a" }), searchParams: Promise.resolve({}) }));
-    expect(html).toContain("Changes requested");
-    expect(html).toContain("Review reason:");
+    expect(html).toContain("Cambios solicitados");
+    expect(html).toContain("Motivo de revisión:");
     expect(html).toContain("Add the date.");
-    expect(html).toContain("Resubmit");
+    expect(html).toContain("Reenviar para revisión");
   });
 
   it("renders sectioned compound requirements without a direct text form", async () => {
@@ -66,10 +66,10 @@ describe("UX progress rendering", () => {
 
     const html = renderToStaticMarkup(await StudentPage({ params: Promise.resolve({ studentId: "student-a" }), searchParams: Promise.resolve({}) }));
     expect(html).toContain("Generales");
-    expect(html).toContain("0% approved in this section");
-    expect(html).toContain("Derived from children: Not complete");
+    expect(html).toContain("0% aprobado");
+    expect(html).toContain("Se completa a partir de sus elementos: incompleto");
     expect(html).toContain("Genesis 1");
-    expect(html).not.toContain("Submit for review");
+    expect(html).not.toContain("Enviar para revisión");
   });
 
   it("renders a child review attempt with its root Part of context", async () => {
@@ -84,11 +84,13 @@ describe("UX progress rendering", () => {
       submittedAt: "2026-07-25",
     }]);
 
-    const html = renderToStaticMarkup(await ReviewsPage({ searchParams: Promise.resolve({}) }));
+    const html = renderToStaticMarkup(await ReviewsPage({ searchParams: Promise.resolve({ message: "Revisión guardada." }) }));
     expect(html).toContain("Learner A: Genesis 1");
     expect(html).toContain("Part of: Bible checklist");
-    expect(html).toContain("Approve");
-    expect(html).toContain("Request changes");
+    expect(html).toContain("Aprobar entrega");
+    expect(html).toContain("Solicitar cambios");
     expect(html).toContain("required");
+    expect(html).toContain('role="status"');
+    expect(html).toContain('tabindex="-1"');
   });
 });
