@@ -45,7 +45,7 @@ npm run test:migrations
 ```
 
 `npm run test:migrations` starts local Supabase, resets without a seed from zero
-through current migration `014`, runs authenticated pgTAP plus local Auth and
+through current migration `020`, runs authenticated pgTAP plus local Auth and
 Storage API tests, and stops with `--no-backup`. It needs no Supabase login,
 linked project, hosted credentials, manual fixture IDs, or real data. Run
 `npm test` afterward for complementary static/domain coverage; it does not
@@ -153,19 +153,32 @@ Migrations are append-only and must be applied in this exact order:
     catalog-version status read needed by publication validation.
 14. `014_complete_service_role_catalog_tenancy_read.sql` — adds the exact
     catalog identity/club read needed by the tenancy trigger.
+15. `015_enforce_progress_rpc_invariants.sql` — normalizes text/review commands
+    and rejects blank required values.
+16. `016_official_catalog_templates.sql` — adds additive official-source,
+    family, level, section, hierarchy, provenance, and immutability contracts.
+17. `017_published_official_metadata_immutability.sql` — closes official
+    metadata, related-level, threshold, and source-binding integrity gaps.
+18. `018_provision_official_amigo_catalog.sql` — adds authenticated,
+    transactional, idempotent official-Amigo provisioning.
+19. `019_enforce_official_amigo_canonical_contract.sql` — pins the canonical
+    payload fingerprint, validates persisted structure, and keeps audit work
+    transactional.
+20. `020_guard_text_submission_modes.sql` — rejects direct text submission for
+    derived and practical requirements at the authenticated RPC boundary.
 
 The known disposable staging state is **only `001`–`007` applied**. Migrations
-`008`–`014` are local-only and are blocked from staging until MG10 passes after
+`008`–`020` are local-only and are blocked from staging until MG10 passes after
 MG8 and MG9. Never edit an applied migration to make a correction.
 
 The release sequence is:
 
-1. Pass the clean-checkout local gate through `014` and complementary checks.
+1. Pass the clean-checkout local gate through `020` and complementary checks.
 2. Make `migration-gate` required and capture active ruleset evidence (MG8).
 3. Merge these operational docs (MG9).
 4. Record successful clean-checkout local and protected-PR acceptance (MG10).
 5. Only then may an authorized operator confirm staging history, dry-run and
-   apply exactly `008`–`014` forward-only, and confirm history through `014`.
+   apply exactly `008`–`020` forward-only, and confirm history through `020`.
 6. Run and record the hosted RLS/RPC, browser, scanner, private Storage, and
    signed-URL checks below. Any failure blocks release and requires a new
    forward-only remediation.
@@ -183,8 +196,8 @@ node node_modules/supabase/dist/supabase.js migration list --linked
 ```
 
 Before the push, the linked history must show `001`–`007` and the dry-run must
-show exactly ordered migrations `008`–`014`, with no gaps or extras. Stop if it
-does not. Afterward, history must show `001`–`014`. Do not use `--include-all`
+show exactly ordered migrations `008`–`020`, with no gaps or extras. Stop if it
+does not. Afterward, history must show `001`–`020`. Do not use `--include-all`
 to bypass history and do not run the empty `supabase/seed.sql` with real data.
 
 ## Staging fixtures and role matrix
@@ -284,6 +297,27 @@ behavior, while the RPC matrix above validates the server-side workflows.
   session and only for clean, undeleted evidence.
 - [ ] Repeat the denied-route checks in a separate browser profile to avoid
   cross-account cookies masking an isolation failure.
+
+## Official Amigo staging acceptance (AC8 only)
+
+> **Authorized staging operation required — do not execute during local AC7
+> verification.** Complete this only after the full `001`–`020` staging
+> migration history and the preceding release gates pass.
+
+- [ ] An authorized Club A administrator provisions the canonical regular
+  Amigo snapshot once; retrying returns the same published catalog/version and
+  creates neither duplicate sections nor requirements.
+- [ ] A Club B administrator provisions the same snapshot and receives a
+  distinct club-owned published catalog/version with the same official source
+  keys. Record only opaque IDs in the secure test-run note.
+- [ ] An enrolled disposable learner sees the nine ordered sections, the
+  25-root denominator, nested child context, and root-only percentage changes.
+- [ ] A compound/derived Amigo root and a practical requirement reject direct
+  text submission in the browser and RPC; the pre-existing `STG Amigo Text
+  Workflow` still submits, is reviewed, and reports progress.
+- [ ] Record the authorized operator, timestamp, redacted browser results, and
+  migration history. Do not provision advanced Amigo data, real people, or
+  production-like evidence.
 
 ## Vercel staging boundary
 

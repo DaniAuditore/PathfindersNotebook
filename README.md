@@ -25,7 +25,7 @@ The canonical credential-free command is:
 npm run test:migrations
 ```
 
-It starts a local stack, resets from zero through the current migration `014`,
+It starts a local stack, resets from zero through the current migration `020`,
 runs authenticated pgTAP and local Auth/Storage API checks, and stops the stack
 without retaining its database. `npm test` remains complementary fast coverage;
 it does not replace this gate. See
@@ -35,15 +35,17 @@ the separate hosted release gate.
 
 ## Supabase deployment and safeguarding operations
 
-1. Staging currently has only migrations `001`–`007`. Migrations `008`–`014`
+1. Staging currently has only migrations `001`–`007`. Migrations `008`–`020`
    are forward-only and MUST NOT be applied to staging until MG10 records a
    successful clean-checkout local gate and protected-PR CI run. The required
    CI status name is exactly `migration-gate`; workflow YAML alone is not
    branch-protection/ruleset evidence.
 2. After MG10, an authorized operator must apply pending migrations `008`
-   through `014` in filename order to disposable staging, then record the
+   through `020` in filename order to disposable staging, then record the
    hosted RLS/RPC, browser, scanner, private Storage, and signed-URL smoke
-   checks. Hosted validation supplements the local/CI gate; neither substitutes
+   checks. Official Amigo provisioning and human browser acceptance are a
+   separate authorized staging gate; local commands do not perform them. Hosted
+   validation supplements the local/CI gate; neither substitutes
    for the other. Follow
    [the staging validation checklist](docs/STAGING_VALIDATION.md) for the exact
    order and evidence requirements. Never edit an applied migration.
