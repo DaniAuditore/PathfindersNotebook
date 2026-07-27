@@ -17,7 +17,7 @@ export default async function ProtectedLayout({ children }: Readonly<{ children:
     <>
       <header>
         <nav aria-label="Main navigation">
-          <Link href="/dashboard">Dashboard</Link>{" | "}<Link href="/reviews">Reviews</Link>
+          <Link href="/dashboard">Dashboard</Link>{" | "}<Link href="/classes">Classes</Link>{" | "}<Link href="/reviews">Reviews</Link>
           <form action={signOutAction} style={{ display: "inline", marginInlineStart: "1rem" }}><button type="submit">Sign out</button></form>
         </nav>
       </header>
