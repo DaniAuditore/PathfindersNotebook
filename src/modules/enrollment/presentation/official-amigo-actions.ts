@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { SupabaseOfficialAmigoEnrollment } from "../infrastructure/supabase-official-amigo-enrollment";
+import { OfficialAmigoEnrollmentFailure, SupabaseOfficialAmigoEnrollment } from "../infrastructure/supabase-official-amigo-enrollment";
 import { requireRole } from "@/shared/auth/session";
 import { writeActionLog } from "@/shared/observability/action-log";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
@@ -25,7 +25,7 @@ export async function enrollOfficialAmigoStudentAction(input: unknown) {
 
   // Student identity is untrusted input. Resolve its club first, then re-authorize.
   const actor = await requireRole(student.club_id, ["admin"]);
-  const result = await new SupabaseOfficialAmigoEnrollment().enrollStudent(command.studentId, actor.id, schoolYear);
+  const result = await new SupabaseOfficialAmigoEnrollment().enrollStudent(command.studentId, schoolYear);
   if (!result.existing) {
     await writeActionLog({ clubId: student.club_id, actorId: actor.id, action: "enrollment.official_amigo_created", entityType: "enrollment", entityId: result.enrollmentId, metadata: { schoolYear } });
   }
@@ -39,8 +39,22 @@ export async function enrollOfficialAmigoStudentFormAction(formData: FormData) {
     revalidatePath("/enrollments");
     revalidatePath(`/students/${result.studentId}`);
     destination = `/enrollments?message=${encodeURIComponent(result.existing ? messages.existing : messages.created)}`;
-  } catch {
+  } catch (error) {
     // Do not expose authorization or database detail from this administrative form.
+    logEnrollmentFailure(error);
   }
   redirect(destination);
+}
+
+function logEnrollmentFailure(error: unknown): void {
+  const failure = error instanceof OfficialAmigoEnrollmentFailure
+    ? { code: failureCode(error), context: error.diagnosticContext }
+    : { code: "official_amigo_enrollment_unexpected", context: {} };
+  console.error({ event: "official_amigo_enrollment_failed", ...failure });
+}
+
+function failureCode(error: OfficialAmigoEnrollmentFailure): string {
+  return /^[a-z0-9_]+$/i.test(error.diagnosticCode)
+    ? error.diagnosticCode
+    : "official_amigo_enrollment_unexpected";
 }

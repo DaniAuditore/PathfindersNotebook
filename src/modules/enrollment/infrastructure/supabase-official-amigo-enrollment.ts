@@ -19,6 +19,15 @@ export interface OfficialAmigoEnrollmentClub {
 
 export type OfficialAmigoEnrollmentResult = { enrollmentId: string; studentId: string; existing: boolean };
 
+export class OfficialAmigoEnrollmentFailure extends Error {
+  constructor(
+    readonly diagnosticCode: string,
+    readonly diagnosticContext: Readonly<Record<string, string>> = {},
+  ) {
+    super("Unable to enroll the student in official Amigo.");
+  }
+}
+
 type CatalogRow = { id: string };
 type VersionRow = { id: string };
 
@@ -70,7 +79,7 @@ export class SupabaseOfficialAmigoEnrollment {
     return groups.filter((group) => group.students.length > 0);
   }
 
-  async enrollStudent(studentId: string, actorId: string, schoolYear: number): Promise<OfficialAmigoEnrollmentResult> {
+  async enrollStudent(studentId: string, schoolYear: number): Promise<OfficialAmigoEnrollmentResult> {
     const supabase = await createSupabaseServerClient();
     const { data: student, error: studentError } = await supabase.from("students").select("id, club_id, display_name").eq("id", studentId).maybeSingle();
     if (studentError || !student) throw new Error("Eligible student not found.");
@@ -79,29 +88,16 @@ export class SupabaseOfficialAmigoEnrollment {
     if (!catalog) throw new Error("Official regular Amigo is not provisioned for this club.");
     await this.assertCanonicalShape(catalog.versionId);
 
-    const existing = await this.findEnrollment(student.id, catalog.catalogId, schoolYear);
-    if (existing) return { enrollmentId: existing, studentId: student.id, existing: true };
-
-    const { data: enrollment, error: insertError } = await supabase.from("enrollments").insert({
-      club_id: student.club_id,
-      student_id: student.id,
-      catalog_id: catalog.catalogId,
-      catalog_version_id: catalog.versionId,
-      school_year: schoolYear,
-      enrolled_by: actorId,
-    }).select("id").single();
-
-    if (insertError || !enrollment) {
-      // The unique enrollment identity is the database idempotency boundary.
-      const concurrent = await this.findEnrollment(student.id, catalog.catalogId, schoolYear);
-      if (concurrent) return { enrollmentId: concurrent, studentId: student.id, existing: true };
-      throw new Error("Unable to enroll the student in official Amigo.");
+    const { data, error } = await supabase.rpc("enroll_official_amigo_student", {
+      target_student_id: student.id,
+      target_school_year: schoolYear,
+    });
+    if (error || !isEnrollmentRpcResult(data)) {
+      throw new OfficialAmigoEnrollmentFailure("official_amigo_enrollment_rpc_failed", {
+        databaseCode: safeDatabaseCode(error?.code),
+      });
     }
-
-    const { count, error: progressError } = await supabase.from("requirement_progress").select("id", { count: "exact", head: true }).eq("enrollment_id", enrollment.id);
-    if (progressError || count !== 121) throw new Error("Official Amigo progress initialization did not complete.");
-
-    return { enrollmentId: enrollment.id, studentId: student.id, existing: false };
+    return { enrollmentId: data.enrollmentId, studentId: student.id, existing: data.existing };
   }
 
   private async findPublishedCatalog(clubId: string): Promise<{ catalogId: string; versionId: string } | null> {
@@ -118,13 +114,6 @@ export class SupabaseOfficialAmigoEnrollment {
     return { catalogId: (catalog as CatalogRow).id, versionId: (version as VersionRow).id };
   }
 
-  private async findEnrollment(studentId: string, catalogId: string, schoolYear: number): Promise<string | null> {
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.from("enrollments").select("id").eq("student_id", studentId).eq("catalog_id", catalogId).eq("school_year", schoolYear).maybeSingle();
-    if (error) throw new Error("Unable to load official Amigo enrollment.");
-    return data?.id ?? null;
-  }
-
   private async assertCanonicalShape(versionId: string): Promise<void> {
     const supabase = await createSupabaseServerClient();
     const { data: requirements, error } = await supabase.from("requirements").select("id, parent_requirement_id").eq("catalog_version_id", versionId);
@@ -134,4 +123,14 @@ export class SupabaseOfficialAmigoEnrollment {
       throw new Error("Official regular Amigo does not satisfy the canonical enrollment contract.");
     }
   }
+}
+
+function isEnrollmentRpcResult(value: unknown): value is { enrollmentId: string; existing: boolean } {
+  return typeof value === "object" && value !== null
+    && typeof (value as { enrollmentId?: unknown }).enrollmentId === "string"
+    && typeof (value as { existing?: unknown }).existing === "boolean";
+}
+
+function safeDatabaseCode(value: unknown): string {
+  return typeof value === "string" && /^[A-Z0-9]{5}$/i.test(value) ? value : "unknown";
 }
