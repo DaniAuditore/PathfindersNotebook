@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import amigoRegularSnapshot from "@/modules/catalog/infrastructure/official/amigo-regular.es.json";
 
 const LOCAL_TESTS_ENABLED = process.env.LOCAL_SUPABASE_TESTS === "1";
 const describeLocalSupabase = LOCAL_TESTS_ENABLED ? describe : describe.skip;
@@ -29,6 +30,9 @@ interface PreparedEvidence {
 
 interface EvidenceFixtures {
   clubId: string;
+  driftClubId: string;
+  partialClubId: string;
+  admin: AuthFixture;
   guardian: AuthFixture;
   student: AuthFixture;
   foreign: AuthFixture;
@@ -139,6 +143,7 @@ async function expectDownloadDenied(client: SupabaseClient, objectPath: string) 
 describeLocalSupabase("local Supabase Auth and private evidence Storage", () => {
   let environment: LocalSupabaseEnvironment;
   let serviceClient: SupabaseClient;
+  let adminClient: SupabaseClient;
   let guardianClient: SupabaseClient;
   let studentClient: SupabaseClient;
   let foreignClient: SupabaseClient;
@@ -181,14 +186,24 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     failOnApiError("Unable to create profile fixtures", profileError);
 
     const clubId = randomUUID();
+    const driftClubId = randomUUID();
+    const partialClubId = randomUUID();
     const { error: clubError } = await serviceClient
       .from("clubs")
-      .insert({ id: clubId, name: `MG5 Club ${runId}` });
+      .insert([
+        { id: clubId, name: `MG5 Club ${runId}` },
+        { id: driftClubId, name: `AC5 Drift Club ${runId}` },
+        { id: partialClubId, name: `AC5 Partial Club ${runId}` },
+      ]);
     failOnApiError("Unable to create club fixture", clubError);
 
     const { error: membershipError } = await serviceClient
       .from("memberships")
-      .insert({ club_id: clubId, user_id: admin.id, role: "admin" });
+      .insert([
+        { club_id: clubId, user_id: admin.id, role: "admin" },
+        { club_id: driftClubId, user_id: admin.id, role: "admin" },
+        { club_id: partialClubId, user_id: admin.id, role: "admin" },
+      ]);
     failOnApiError("Unable to create membership fixture", membershipError);
 
     const studentRecordId = randomUUID();
@@ -260,6 +275,9 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
 
     fixtures = {
       clubId,
+      driftClubId,
+      partialClubId,
+      admin,
       guardian,
       student,
       foreign,
@@ -269,6 +287,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       invalidMime: await prepareEvidence(guardianClient, progress.id),
       oversized: await prepareEvidence(guardianClient, progress.id),
     };
+    adminClient = await signInFixture(environment, admin);
   }, LOCAL_TEST_TIMEOUT_MS);
 
   afterAll(async () => {
@@ -287,6 +306,148 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       expect(data.user?.id).toBe(fixture.id);
     }
   });
+
+  it("serializes concurrent official-catalog provisioning into one complete publication", async () => {
+    const calls = await Promise.all([
+      adminClient.rpc("provision_official_amigo_catalog", {
+        target_club_id: fixtures.clubId,
+        snapshot: amigoRegularSnapshot,
+      }),
+      adminClient.rpc("provision_official_amigo_catalog", {
+        target_club_id: fixtures.clubId,
+        snapshot: amigoRegularSnapshot,
+      }),
+    ]);
+
+    for (const call of calls) expect(call.error).toBeNull();
+    expect(calls[0].data.versionId).toBe(calls[1].data.versionId);
+    expect(calls[0].data).toEqual(calls[1].data);
+    expect(calls[0].data).not.toHaveProperty("alreadyPublished");
+
+    const versionId = calls[0].data.versionId as string;
+    const [sections, roots, children, rows] = await Promise.all([
+      adminClient.from("catalog_sections").select("id", { count: "exact", head: true }).eq("catalog_version_id", versionId),
+      adminClient.from("requirements").select("id", { count: "exact", head: true }).eq("catalog_version_id", versionId).is("parent_requirement_id", null),
+      adminClient.from("requirements").select("id", { count: "exact", head: true }).eq("catalog_version_id", versionId).not("parent_requirement_id", "is", null),
+      adminClient.from("requirements").select("id", { count: "exact", head: true }).eq("catalog_version_id", versionId),
+    ]);
+    for (const result of [sections, roots, children, rows]) expect(result.error).toBeNull();
+    expect([sections.count, roots.count, children.count, rows.count]).toEqual([9, 25, 96, 121]);
+
+    const [persistedSections, persistedRequirements, persistedSource] = await Promise.all([
+      adminClient.from("catalog_sections")
+        .select("template_entity_id, source_code, official_code, slug, title, position, visual_page_references")
+        .eq("catalog_version_id", versionId)
+        .order("position"),
+      adminClient.from("requirements")
+        .select("id, template_entity_id, parent_requirement_id, section_id, source_code, child_role, requirement_type, title, position, optional, weight, modalities, progress_mode, completion_semantics, completion_threshold, visual_page_references")
+        .eq("catalog_version_id", versionId),
+      adminClient.from("official_sources")
+        .select("document_title, authority, locale, document_sha256, revision_key, is_undated, provenance, transcription_notes, visual_page_references, source_payload_sha256")
+        .eq("source_code", amigoRegularSnapshot.source.sourceCode)
+        .single(),
+    ]);
+    for (const result of [persistedSections, persistedRequirements, persistedSource]) {
+      expect(result.error).toBeNull();
+    }
+    expect(persistedSections.data).toHaveLength(amigoRegularSnapshot.sections.length);
+    for (const [index, expected] of amigoRegularSnapshot.sections.entries()) {
+      expect(persistedSections.data?.[index]).toMatchObject({
+        template_entity_id: expected.id,
+        source_code: expected.sourceCode,
+        official_code: expected.officialCode,
+        slug: expected.slug,
+        title: expected.title,
+        position: expected.position,
+        visual_page_references: expected.visualPageReferences,
+      });
+    }
+
+    const actualRequirements = new Map(persistedRequirements.data?.map((row) => [row.source_code, row]));
+    const actualSourceByRowId = new Map(persistedRequirements.data?.map((row) => [row.id, row.source_code]));
+    for (const expected of amigoRegularSnapshot.requirements) {
+      const actual = actualRequirements.get(expected.sourceCode);
+      expect(actual).toMatchObject({
+        template_entity_id: expected.id,
+        source_code: expected.sourceCode,
+        child_role: "childRole" in expected ? expected.childRole : null,
+        requirement_type: expected.requirementType,
+        title: expected.title,
+        position: expected.position,
+        optional: expected.optional,
+        weight: expected.weight,
+        modalities: expected.modalities,
+        progress_mode: expected.completion.kind === "direct" ? "direct" : "derived",
+        completion_semantics: expected.completion.kind,
+        completion_threshold: "threshold" in expected.completion ? expected.completion.threshold : null,
+        visual_page_references: expected.visualPageReferences,
+      });
+      expect(actualSourceByRowId.get(actual?.parent_requirement_id ?? "")).toBe(
+        "parentSourceCode" in expected ? expected.parentSourceCode : undefined,
+      );
+    }
+    expect(persistedSource.data).toMatchObject({
+      document_title: amigoRegularSnapshot.source.documentTitle,
+      authority: amigoRegularSnapshot.source.authority,
+      locale: amigoRegularSnapshot.source.locale,
+      document_sha256: amigoRegularSnapshot.source.documentSha256,
+      revision_key: amigoRegularSnapshot.source.revisionKey,
+      is_undated: amigoRegularSnapshot.source.isUndated,
+      provenance: amigoRegularSnapshot.source.provenance,
+      transcription_notes: amigoRegularSnapshot.source.transcriptionNotes,
+      visual_page_references: amigoRegularSnapshot.source.visualPageReferences,
+      source_payload_sha256: "dd4f85b0f20415cfcbcb95be97819ab4cdbfc9a54484689423c4982e065ba904",
+    });
+    const retry = await adminClient.rpc("provision_official_amigo_catalog", {
+      target_club_id: fixtures.clubId,
+      snapshot: amigoRegularSnapshot,
+    });
+    expect(retry.error).toBeNull();
+    expect(retry.data).toEqual(calls[0].data);
+  }, LOCAL_TEST_TIMEOUT_MS);
+
+  it("rejects canonical drift and unauthorized direct RPC actors without state or audit", async () => {
+    const drifted = structuredClone(amigoRegularSnapshot);
+    drifted.requirements[0].title = "Different title";
+    const driftCall = await adminClient.rpc("provision_official_amigo_catalog", {
+      target_club_id: fixtures.driftClubId,
+      snapshot: drifted,
+    });
+    expect(driftCall.data).toBeNull();
+    expect(driftCall.error?.code).toBe("23514");
+
+    for (const client of [foreignClient, anonymousClient]) {
+      const denied = await client.rpc("provision_official_amigo_catalog", {
+        target_club_id: fixtures.clubId,
+        snapshot: amigoRegularSnapshot,
+      });
+      expect(denied.data).toBeNull();
+      expect(denied.error?.code).toBe("42501");
+    }
+
+    const catalogs = await adminClient.from("catalogs").select("id", { count: "exact", head: true })
+      .eq("club_id", fixtures.driftClubId).not("level_template_id", "is", null);
+    expect(catalogs.count).toBe(0);
+  }, LOCAL_TEST_TIMEOUT_MS);
+
+  it("rejects a pre-existing partial official catalog instead of repairing it", async () => {
+    const { error: partialError } = await serviceClient.from("catalogs").insert({
+      club_id: fixtures.partialClubId,
+      class_type: "regular",
+      title: amigoRegularSnapshot.level.title,
+      level_template_id: amigoRegularSnapshot.level.id,
+      source_catalog_code: amigoRegularSnapshot.level.levelCode,
+    });
+    failOnApiError("Unable to create AC5 partial-state fixture", partialError);
+
+    const result = await adminClient.rpc("provision_official_amigo_catalog", {
+      target_club_id: fixtures.partialClubId,
+      snapshot: amigoRegularSnapshot,
+    });
+    expect(result.data).toBeNull();
+    expect(result.error?.code).toBe("23514");
+    expect(result.error?.message).toContain("partial state");
+  }, LOCAL_TEST_TIMEOUT_MS);
 
   it("allows linked actors to upload only their own prepared pending paths", async () => {
     const foreignUpload = await foreignClient.storage

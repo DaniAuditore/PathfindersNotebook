@@ -11,3 +11,5 @@ export interface PublishedCatalogVersion {
   versionId: string;
   versionNumber: number;
 }
+
+export type OfficialPublishedCatalogVersion = PublishedCatalogVersion;
