@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(19);
+select plan(21);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -147,6 +147,35 @@ select is(
   2,
   'review history retains rejection and approval exactly once'
 );
+
+-- A separate published fixture proves migration 020 guards the authenticated
+-- boundary without changing the legacy text workflow fixture above.
+insert into public.catalogs (id, club_id, class_type, title)
+values ('40000000-0000-0000-0000-000000000004', test_fixtures.id('club_a'), 'advanced', 'Fixture guarded catalog A');
+insert into public.catalog_versions (id, catalog_id, version_number, status)
+values ('50000000-0000-0000-0000-000000000004', '40000000-0000-0000-0000-000000000004', 1, 'draft');
+insert into public.requirements (id, catalog_version_id, requirement_type, title, position, requires_evidence, evidence_types, modalities, progress_mode, completion_semantics)
+values
+  ('60000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000004', 'compound', 'Fixture derived requirement A', 0, false, '{}', array['reading']::text[], 'derived', 'all_children'),
+  ('60000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000004', 'manual', 'Fixture practical requirement A', 1, false, '{}', array['practical_in_person']::text[], 'direct', 'direct');
+update public.catalog_versions set status = 'published', published_at = now()
+where id = '50000000-0000-0000-0000-000000000004';
+insert into public.enrollments (id, club_id, student_id, catalog_id, catalog_version_id, school_year, enrolled_by)
+values ('70000000-0000-0000-0000-000000000004', test_fixtures.id('club_a'), test_fixtures.id('student_a'), '40000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000004', 2027, test_fixtures.id('admin_a'));
+
+select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
+set local role authenticated;
+select throws_ok(
+  $$select public.submit_progress_attempt((select id from public.requirement_progress where enrollment_id = '70000000-0000-0000-0000-000000000004' and requirement_id = '60000000-0000-0000-0000-000000000004'), 'attempted derived text')$$,
+  'P0001', 'this requirement cannot be submitted as text',
+  'the authenticated RPC rejects direct text for a derived requirement'
+);
+select throws_ok(
+  $$select public.submit_progress_attempt((select id from public.requirement_progress where enrollment_id = '70000000-0000-0000-0000-000000000004' and requirement_id = '60000000-0000-0000-0000-000000000005'), 'attempted practical text')$$,
+  'P0001', 'this requirement cannot be submitted as text',
+  'the authenticated RPC rejects direct text for a practical requirement'
+);
+reset role;
 
 select * from finish();
 rollback;
