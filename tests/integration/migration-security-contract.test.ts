@@ -271,4 +271,19 @@ describe("Supabase migration security contracts", () => {
     expect(remediation).toContain("public.actor_can_submit_progress(request_actor_id,");
     expect(remediation).not.toContain("grant usage on schema auth to pathfinders_scoped_command_owner");
   });
+
+  it("closes residual privileged-UI table DML without inventing organization or unit commands", () => {
+    const closure = migration("031_close_residual_privileged_ui_dml.sql");
+    const evidenceFacade = readFileSync(resolve(process.cwd(), "src", "modules", "evidence", "infrastructure", "supabase-evidence-facade.ts"), "utf8");
+
+    for (const table of ["organizations", "units", "evidence_upload_rate_limits"]) {
+      expect(closure).toContain(`public.${table}`);
+    }
+    expect(closure).toContain("from public, authenticated, anon");
+    expect(closure).toContain("and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')");
+    expect(closure).toContain("prepare_evidence_upload");
+    expect(closure).not.toContain("create function public.create_organization");
+    expect(closure).not.toContain("create function public.create_unit");
+    expect(evidenceFacade).toContain('supabase.rpc("prepare_evidence_upload"');
+  });
 });
