@@ -10,6 +10,12 @@ const describeLocalSupabase = LOCAL_TESTS_ENABLED ? describe : describe.skip;
 const EVIDENCE_BYTES = new TextEncoder().encode("%PDF-1.4\nMG5 local evidence fixture\n");
 const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
 const LOCAL_TEST_TIMEOUT_MS = 60_000;
+const CLOSED_DIRECT_DML_TABLES = [
+  "catalogs", "catalog_versions", "catalog_sections", "requirements", "profiles", "clubs",
+  "memberships", "students", "role_assignments", "enrollments", "requirement_progress",
+  "progress_attempts", "progress_reviews", "assessments", "investitures", "evidence",
+  "attempt_evidence", "audit_log",
+] as const;
 
 interface LocalSupabaseEnvironment {
   apiUrl: string;
@@ -331,6 +337,16 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     expect(denied.data).toBeNull();
     expect(denied.error?.code).toBe("42501");
   });
+
+  it("denies real Auth and anonymous raw DML across every closed domain table", async () => {
+    for (const client of [adminClient, anonymousClient]) {
+      for (const table of CLOSED_DIRECT_DML_TABLES) {
+        const result = await client.from(table).delete().eq("id", randomUUID());
+        expect(result.data).toBeNull();
+        expect(result.error, `${table} must reject raw delete`).not.toBeNull();
+      }
+    }
+  }, LOCAL_TEST_TIMEOUT_MS);
 
   it("serializes concurrent official-catalog provisioning into one complete publication", async () => {
     const calls = await Promise.all([
