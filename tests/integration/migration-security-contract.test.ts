@@ -239,4 +239,16 @@ describe("Supabase migration security contracts", () => {
     expect(closure).toContain("No operational/canonical RPC intentionally");
     expect(closure).toContain("set search_path = public, pg_temp");
   });
+
+  it("moves scoped command ownership to a non-login, object-limited role", () => {
+    const owner = migration("029_least_privilege_command_owner.sql");
+
+    expect(owner).toContain("create role pathfinders_scoped_command_owner nologin noinherit nosuperuser nocreatedb nocreaterole bypassrls");
+    expect(owner).toContain("revoke all privileges on all tables in schema public from pathfinders_scoped_command_owner");
+    expect(owner).toContain("grant insert on public.progress_reviews, public.investitures, public.audit_log to pathfinders_scoped_command_owner");
+    for (const command of ["update_own_profile", "assign_role", "publish_catalog_draft"]) {
+      expect(owner).toContain(`alter function public.${command}`);
+      expect(owner).toContain("owner to pathfinders_scoped_command_owner");
+    }
+  });
 });
