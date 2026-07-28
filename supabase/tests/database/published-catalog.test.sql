@@ -12,6 +12,11 @@ select lives_ok(
 select test_fixtures.assume_authenticated(test_fixtures.id('admin_a'));
 set local role authenticated;
 
+-- Direct browser DML is closed by migration 027.  Test immutable catalog
+-- triggers through the privileged fixture path so this suite still validates
+-- the invariant independently of the command boundary.
+reset role;
+
 select throws_ok(
   $$update public.catalog_versions set published_at = now() where id = test_fixtures.id('catalog_version_a')$$,
   'P0001',
@@ -41,6 +46,5 @@ select throws_ok(
   'a requirement cannot be deleted after publication'
 );
 
-reset role;
 select * from finish();
 rollback;

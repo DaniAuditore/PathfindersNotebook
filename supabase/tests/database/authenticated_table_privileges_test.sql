@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(14);
+select plan(50);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -23,14 +23,18 @@ select is_empty(
   'a Club A administrator cannot read the Club B catalog'
 );
 
-select lives_ok(
+select throws_ok(
   $$update public.catalogs set title = 'Fixture Regular A revised' where id = test_fixtures.id('catalog_a')$$,
-  'a Club A administrator can update its own catalog through RLS'
+  '42501',
+  'permission denied for table catalogs',
+  'a Club A director cannot directly update its catalog'
 );
 
-select is_empty(
-  $$update public.catalogs set title = 'cross-tenant write' where id = test_fixtures.id('catalog_b') returning id$$,
-  'a Club A administrator cannot update the Club B catalog'
+select throws_ok(
+  $$update public.catalogs set title = 'cross-tenant write' where id = test_fixtures.id('catalog_b')$$,
+  '42501',
+  'permission denied for table catalogs',
+  'a Club A director cannot directly update a foreign catalog'
 );
 
 reset role;
@@ -54,6 +58,13 @@ select ok(
   not has_table_privilege('authenticated', 'public.enrollments', 'DELETE'),
   'authenticated has no enrollment delete privilege because no enrollment delete policy exists'
 );
+
+-- Every browser-write surface closed by 027 has no authenticated or anonymous
+-- DML privilege.  Function commands, not RLS write policies, are the boundary.
+select ok(not has_table_privilege('authenticated', format('public.%I', table_name), 'INSERT, UPDATE, DELETE'), 'authenticated has no direct DML on ' || table_name)
+from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log']) as table_name;
+select ok(not has_table_privilege('anon', format('public.%I', table_name), 'INSERT, UPDATE, DELETE'), 'anon has no direct DML on ' || table_name)
+from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log']) as table_name;
 
 select ok(
   not has_table_privilege('authenticated', 'public.enrollments', 'INSERT'),

@@ -129,6 +129,21 @@ describe("Supabase migration security contracts", () => {
     expect(evidenceMigration).toContain("create function public.authorized_evidence_download");
     expect(evidenceMigration).toContain("evidence.scan_status = 'clean'");
     expect(route).toContain("createSignedUrl(evidence.objectPath, EVIDENCE_DOWNLOAD_TTL_SECONDS)");
+    expect(route).not.toContain("writeActionLog");
+  });
+
+  it("keeps evidence audits inside authorized database commands after direct audit DML closure", () => {
+    const evidenceActions = readFileSync(resolve(process.cwd(), "src", "modules", "evidence", "presentation", "actions.ts"), "utf8");
+    const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "files", "[evidenceId]", "route.ts"), "utf8");
+    const evidenceAudit = migration("028_atomic_evidence_command_audit.sql");
+
+    expect(evidenceActions).not.toContain("writeActionLog");
+    expect(route).not.toContain("writeActionLog");
+    expect(evidenceAudit).toContain("insert into public.audit_log");
+    expect(evidenceAudit).toContain("evidence.download_authorized");
+    expect(evidenceAudit).toContain("security definer");
+    expect(evidenceAudit).toContain("from public, anon");
+    expect(evidenceAudit).toContain("to authenticated");
   });
 
   it("writes protected-mutation audits atomically and retains manual-completion context", () => {
@@ -208,5 +223,20 @@ describe("Supabase migration security contracts", () => {
       expect(reader).not.toContain('.from("memberships")');
       expect(reader).not.toContain('.eq("role", "admin")');
     }
+  });
+
+  it("closes every direct domain DML path and anonymous canonical/operational execution", () => {
+    const closure = migration("027_close_direct_domain_dml.sql");
+
+    for (const table of ["catalogs", "catalog_versions", "catalog_sections", "requirements", "profiles", "clubs", "memberships", "students", "role_assignments", "enrollments", "requirement_progress", "progress_attempts", "progress_reviews", "assessments", "investitures", "evidence", "attempt_evidence", "audit_log"]) {
+      expect(closure).toContain(`public.${table}`);
+    }
+    expect(closure).toContain("from authenticated, anon");
+    expect(closure).toContain("and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')");
+    for (const signature of ["has_canonical_role_at_club", "has_canonical_role_in_unit", "has_student_link", "can_review_progress", "can_access_evidence", "provision_official_amigo_catalog", "migrate_enrollment_version"]) {
+      expect(closure).toContain(signature);
+    }
+    expect(closure).toContain("No operational/canonical RPC intentionally");
+    expect(closure).toContain("set search_path = public, pg_temp");
   });
 });
