@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(21);
+select plan(23);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -25,6 +25,11 @@ values ('70000000-0000-0000-0000-000000000003', test_fixtures.id('club_a'), test
 select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
 set local role authenticated;
 
+select ok(
+  public.can_submit_evidence((select id from public.requirement_progress where enrollment_id = '70000000-0000-0000-0000-000000000003')),
+  'the linked guardian predicate resolves before the command owner evaluates RLS'
+);
+
 select throws_ok(
   $$select public.submit_progress_attempt((select id from public.requirement_progress where enrollment_id = '70000000-0000-0000-0000-000000000003'), null)$$,
   'P0001', 'submission text is required',
@@ -38,6 +43,13 @@ select throws_ok(
 select lives_ok(
   $$select public.submit_progress_attempt((select id from public.requirement_progress where enrollment_id = '70000000-0000-0000-0000-000000000003'), '  completed reading  ')$$,
   'a linked guardian can submit normalized nonblank text'
+);
+
+select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
+select throws_ok(
+  $$select public.submit_progress_attempt((select id from public.requirement_progress where enrollment_id = test_fixtures.id('enrollment_b')), 'foreign linked learner')$$,
+  'P0001', 'only a linked guardian or student can submit progress',
+  'a guardian cannot submit progress for an unlinked learner in another club'
 );
 
 reset role;

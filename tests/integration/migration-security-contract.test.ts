@@ -242,6 +242,7 @@ describe("Supabase migration security contracts", () => {
 
   it("moves scoped command ownership to a non-login, object-limited role", () => {
     const owner = migration("029_least_privilege_command_owner.sql");
+    const remediation = migration("030_remediate_scoped_command_owner.sql");
 
     expect(owner).toContain("create role pathfinders_scoped_command_owner nologin noinherit nosuperuser nocreatedb nocreaterole bypassrls");
     expect(owner).toContain("revoke all privileges on all tables in schema public from pathfinders_scoped_command_owner");
@@ -250,5 +251,24 @@ describe("Supabase migration security contracts", () => {
       expect(owner).toContain(`alter function public.${command}`);
       expect(owner).toContain("owner to pathfinders_scoped_command_owner");
     }
+
+    expect(remediation).toContain("pathfinders_scoped_command_owner must be NOLOGIN, NOINHERIT, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, and BYPASSRLS");
+    expect(remediation).toContain("create or replace function public.request_actor_id()");
+    expect(remediation).toContain("current_setting('request.jwt.claim.sub', true)");
+    expect(remediation).toContain("exception when sqlstate '22P02'");
+    expect(remediation).not.toContain("grant usage on schema auth to pathfinders_scoped_command_owner");
+    expect(remediation).not.toContain("grant execute on function auth.uid(), auth.jwt() to pathfinders_scoped_command_owner");
+    expect(remediation).toContain("grant select, insert on public.attempt_evidence to pathfinders_scoped_command_owner");
+    expect(remediation).toContain("postgres to retain its administrative SET ROLE membership");
+    expect(remediation).toContain("no application-capable role may be a member of this role");
+    for (const command of ["update_own_profile", "update_club", "create_or_update_student", "assign_role", "revoke_role", "publish_catalog_draft", "submit_progress_attempt", "review_progress_attempt", "reverse_progress_acceptance", "manually_complete_progress", "record_investiture", "prepare_evidence_upload", "finalize_evidence_deletion", "prepare_evidence_deletion", "set_evidence_legal_hold", "enroll_student", "record_assessment", "authorized_evidence_download"]) {
+      expect(remediation).toContain(`alter function public.${command}`);
+    }
+    expect(remediation).toContain("from public, anon");
+    expect(remediation).toContain("to authenticated");
+    expect(remediation).toContain("set search_path = public, pg_temp");
+    expect(remediation).toContain("Capture the request actor at every command boundary");
+    expect(remediation).toContain("public.actor_can_submit_progress(request_actor_id,");
+    expect(remediation).not.toContain("grant usage on schema auth to pathfinders_scoped_command_owner");
   });
 });

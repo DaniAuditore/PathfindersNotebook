@@ -3,7 +3,7 @@
 ## Scope and guardrails
 
 This runbook covers the forward-only canonical-role and direct-DML closure
-migrations `023`–`029`. Use a disposable staging project and approved operator
+migrations `023`–`030`. Use a disposable staging project and approved operator
 credentials. Never place secrets, JWTs, signed URLs, learner data, or raw audit
 payloads in this document or a ticket.
 
@@ -21,8 +21,15 @@ temporarily disabling the affected application caller.
    same-club `CLUB_DIRECTOR`; viewers remain retired. Never infer or grant
    `SYSTEM_ADMIN` from a legacy role.
 3. Apply through the approved deployment process, then confirm migration history.
-   `029` moves the scoped SECURITY DEFINER commands to the non-login
-   `pathfinders_scoped_command_owner` role; it does not alter business data.
+   `030` reuses the non-login, non-inheriting
+   `pathfinders_scoped_command_owner`, transfers every `024`/`025` command
+   to it, and adds only the required `attempt_evidence` and rate-limit paths.
+   Its `BYPASSRLS` attribute is safe only across its exact trust boundary:
+   managed Supabase `postgres` may retain the sole administrative `SET ROLE`
+   membership required for ownership transfer, while `PUBLIC`, `anon`,
+   `authenticated`, `service_role`, and every application-capable role may not
+   assume it. Each command captures the
+   request JWT actor and applies explicit canonical scope predicates before DML.
 
 ## Post-deployment verification
 
@@ -34,8 +41,21 @@ Run read-only catalog checks and retain only boolean/count results:
   `SYSTEM_ADMIN` branch;
 - command functions are SECURITY DEFINER, pin `search_path=public, pg_temp`,
   deny anon execution, and have the expected authenticated/service-only grant;
-- `024` catalog/identity command owners are `pathfinders_scoped_command_owner`, whose attributes
-  are `NOLOGIN`, `NOINHERIT`, `NOSUPERUSER`, `NOCREATEDB`, and `NOCREATEROLE`;
+- all `024`/`025` scoped command owners are `pathfinders_scoped_command_owner`, whose attributes
+  are `NOLOGIN`, `NOINHERIT`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, and `BYPASSRLS`;
+- `PUBLIC` and `anon` cannot execute the twelve `025` commands, `authenticated`
+  has only the listed command EXECUTEs, and the functions retain
+  `search_path=public, pg_temp`;
+- the command owner has only its enumerated table grants (including
+  `attempt_evidence` `INSERT`), `postgres` as its sole administrative membership
+  and no application-capable member, no Auth-schema
+  access, and no owner-only RLS policy graph. Its command bodies capture the
+  JWT actor through `request_actor_id()` and constrain every action with
+  canonical actor/scope predicates before DML. Provisioning/migration, service bootstrap, enrollment-specialized,
+  and trigger/internal functions retain their separately reviewed owners because
+  their broader dependency contracts are outside this scoped command owner. Verify
+   `postgres` membership is the sole documented ownership-transfer exception and
+   that no browser or service role can `SET ROLE` to the command owner;
 - an existing official Amigo catalog passes
   `validate_official_amigo_catalog_version`. This is a read-only validation
   command: it performs no domain mutation and creates no audit row.
