@@ -64,7 +64,7 @@ describe("official Amigo operational provisioning", () => {
       ok: true,
       value: { catalogId: "catalog-a", versionId: "version-a", versionNumber: 1 },
     });
-    expect(mocks.requireRole).toHaveBeenCalledWith(clubId, ["admin"]);
+    expect(mocks.requireRole).toHaveBeenCalledWith(clubId, ["CLUB_DIRECTOR"]);
     expect(mocks.execute).toHaveBeenCalledWith(expect.objectContaining({ clubId }));
   });
 

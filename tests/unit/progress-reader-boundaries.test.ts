@@ -38,33 +38,33 @@ describe("Supabase progress read boundaries", () => {
 
   it("derives reviewer capability and linked learners from the authenticated actor", async () => {
     const fake = clientWith({
-      memberships: [{ data: [{ club_id: "club-a", role: "instructor" }], error: null }],
+      role_assignments: [{ data: [{ club_id: "club-a", role: "INSTRUCTOR" }], error: null }],
       students: [{ data: [], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseProgressReader().dashboard("actor-a")).resolves.toEqual({ learners: [], canReview: true });
-    expect(fake.calls).toContainEqual({ table: "memberships", method: "eq", args: ["user_id", "actor-a"] });
-    expect(fake.calls).toContainEqual({ table: "memberships", method: "in", args: ["role", ["admin", "instructor"]] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "actor-a"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "in", args: ["role", ["CLUB_DIRECTOR", "INSTRUCTOR"]] });
     expect(fake.calls).toContainEqual({ table: "students", method: "or", args: ["guardian_user_id.eq.actor-a,student_user_id.eq.actor-a"] });
   });
 
   it("scopes the review queue from server-read memberships, never caller club input", async () => {
     const fake = clientWith({
-      memberships: [{ data: [{ club_id: "club-a" }], error: null }],
+      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
       enrollments: [{ data: [], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseProgressReader().reviewQueue("reviewer-a")).resolves.toEqual([]);
-    expect(fake.calls).toContainEqual({ table: "memberships", method: "eq", args: ["user_id", "reviewer-a"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "reviewer-a"] });
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "in", args: ["club_id", ["club-a"]] });
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "eq", args: ["status", "active"] });
   });
 
   it("projects a child attempt with its root Part of context", async () => {
     const fake = clientWith({
-      memberships: [{ data: [{ club_id: "club-a" }], error: null }],
+      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
       enrollments: [{ data: [{ id: "enrollment-a", student_id: "student-a" }], error: null }],
       requirement_progress: [{ data: [{ id: "progress-a", enrollment_id: "enrollment-a", requirement_id: "child-a" }], error: null }],
       progress_attempts: [{ data: [{ id: "attempt-a", progress_id: "progress-a", submission_text: "Finished Genesis 1", submitted_at: "2026-07-27" }], error: null }],

@@ -14,12 +14,16 @@ begin
   case fixture_name
     when 'club_a' then return '10000000-0000-0000-0000-000000000001';
     when 'club_b' then return '10000000-0000-0000-0000-000000000002';
+    when 'organization_a' then return '10000000-0000-0000-0000-000000000003';
+    when 'unit_a' then return '10000000-0000-0000-0000-000000000004';
     when 'admin_a' then return '20000000-0000-0000-0000-000000000001';
     when 'instructor_a' then return '20000000-0000-0000-0000-000000000002';
     when 'guardian_a' then return '20000000-0000-0000-0000-000000000003';
     when 'student_a_user' then return '20000000-0000-0000-0000-000000000004';
     when 'admin_b' then return '20000000-0000-0000-0000-000000000005';
     when 'student_b_user' then return '20000000-0000-0000-0000-000000000006';
+    when 'system_admin_a' then return '20000000-0000-0000-0000-000000000007';
+    when 'counselor_a' then return '20000000-0000-0000-0000-000000000008';
     when 'student_a' then return '30000000-0000-0000-0000-000000000001';
     when 'student_b' then return '30000000-0000-0000-0000-000000000002';
     when 'catalog_a' then return '40000000-0000-0000-0000-000000000001';
@@ -74,6 +78,10 @@ begin
     public.catalogs,
     public.students,
     public.memberships,
+    public.role_assignment_migration_ledger,
+    public.role_assignments,
+    public.units,
+    public.organizations,
     public.profiles,
     public.clubs
   restart identity cascade;
@@ -87,7 +95,9 @@ begin
     (test_fixtures.id('guardian_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-guardian-a@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
     (test_fixtures.id('student_a_user'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-student-a@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
     (test_fixtures.id('admin_b'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-admin-b@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
-    (test_fixtures.id('student_b_user'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-student-b@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
+    (test_fixtures.id('student_b_user'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-student-b@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+    (test_fixtures.id('system_admin_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-system-admin@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+    (test_fixtures.id('counselor_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-counselor-a@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
   on conflict (id) do update set email = excluded.email, updated_at = excluded.updated_at;
 
   insert into public.profiles (user_id, display_name) values
@@ -96,11 +106,15 @@ begin
     (test_fixtures.id('guardian_a'), 'Fixture Guardian A'),
     (test_fixtures.id('student_a_user'), 'Fixture Student A'),
     (test_fixtures.id('admin_b'), 'Fixture Admin B'),
-    (test_fixtures.id('student_b_user'), 'Fixture Student B');
+    (test_fixtures.id('student_b_user'), 'Fixture Student B'),
+    (test_fixtures.id('system_admin_a'), 'Fixture System Admin'),
+    (test_fixtures.id('counselor_a'), 'Fixture Counselor A');
 
   insert into public.clubs (id, name) values
     (test_fixtures.id('club_a'), 'Fixture Club A'),
     (test_fixtures.id('club_b'), 'Fixture Club B');
+  insert into public.organizations (id, name) values (test_fixtures.id('organization_a'), 'Fixture Organization A');
+  insert into public.units (id, club_id, name) values (test_fixtures.id('unit_a'), test_fixtures.id('club_a'), 'Fixture Unit A');
 
   insert into public.memberships (club_id, user_id, role) values
     (test_fixtures.id('club_a'), test_fixtures.id('admin_a'), 'admin'),
@@ -110,6 +124,16 @@ begin
   insert into public.students (id, club_id, display_name, guardian_user_id, student_user_id) values
     (test_fixtures.id('student_a'), test_fixtures.id('club_a'), 'Fixture Student A', test_fixtures.id('guardian_a'), test_fixtures.id('student_a_user')),
     (test_fixtures.id('student_b'), test_fixtures.id('club_b'), 'Fixture Student B', null, test_fixtures.id('student_b_user'));
+  insert into public.role_assignments (user_id, role, club_id) values
+    (test_fixtures.id('admin_a'), 'CLUB_DIRECTOR', test_fixtures.id('club_a')),
+    (test_fixtures.id('instructor_a'), 'INSTRUCTOR', test_fixtures.id('club_a')),
+    (test_fixtures.id('admin_b'), 'CLUB_DIRECTOR', test_fixtures.id('club_b'));
+  insert into public.role_assignments (user_id, role, student_id) values
+    (test_fixtures.id('guardian_a'), 'GUARDIAN', test_fixtures.id('student_a')),
+    (test_fixtures.id('student_a_user'), 'PATHFINDER', test_fixtures.id('student_a')),
+    (test_fixtures.id('student_b_user'), 'PATHFINDER', test_fixtures.id('student_b'));
+  insert into public.role_assignments (user_id, role, organization_id) values (test_fixtures.id('system_admin_a'), 'SYSTEM_ADMIN', test_fixtures.id('organization_a'));
+  insert into public.role_assignments (user_id, role, unit_id) values (test_fixtures.id('counselor_a'), 'COUNSELOR', test_fixtures.id('unit_a'));
 
   insert into public.catalogs (id, club_id, class_type, title) values
     (test_fixtures.id('catalog_a'), test_fixtures.id('club_a'), 'regular', 'Fixture Regular A'),

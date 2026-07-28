@@ -10,7 +10,8 @@ import { Navigation } from "@/shared/ui/navigation";
 
 describe("capacidad de navegación", () => {
   it("muestra inscripciones sólo para administradores y no convierte visibilidad en autorización", async () => {
-    const eq = vi.fn().mockResolvedValue({ data: [{ role: "instructor" }] });
+    const is = vi.fn().mockResolvedValue({ data: [{ role: "INSTRUCTOR" }] });
+    const eq = vi.fn(() => ({ is }));
     createSupabaseServerClient.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq })) })) });
     const links = await navigationCapabilities({ id: "instructor" });
     expect(links.find((link) => link.href === "/reviews")?.visible).toBe(true);

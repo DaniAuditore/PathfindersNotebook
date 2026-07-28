@@ -26,6 +26,7 @@ function clientWith(results: Record<string, Result[]>) {
         const query = {
           select: (...args: unknown[]) => { calls.push({ table, method: "select", args }); return query; },
           eq: (...args: unknown[]) => { calls.push({ table, method: "eq", args }); return query; },
+          is: (...args: unknown[]) => { calls.push({ table, method: "is", args }); return query; },
           in: (...args: unknown[]) => { calls.push({ table, method: "in", args }); return query; },
           order: (...args: unknown[]) => { calls.push({ table, method: "order", args }); return query; },
           insert: (...args: unknown[]) => { calls.push({ table, method: "insert", args }); return query; },
@@ -74,9 +75,9 @@ describe("official Amigo enrollment boundary", () => {
     expect(fake.calls).toContainEqual({ table: "enroll_official_amigo_student", method: "rpc", args: [{ target_student_id: studentId, target_school_year: 2026 }] });
   });
 
-  it("finds the provisioned catalog and keeps a student eligible when only a withdrawn legacy enrollment exists", async () => {
+  it("finds the provisioned catalog for a canonical-only director and keeps a student eligible when only a withdrawn legacy enrollment exists", async () => {
     const fake = clientWith({
-      memberships: [{ data: [{ club_id: "club-a" }], error: null }],
+      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
       clubs: [{ data: [{ id: "club-a", name: "Club A" }], error: null }],
       catalogs: [{ data: { id: "official-catalog-a" }, error: null }],
       catalog_versions: [{ data: { id: "official-version-a" }, error: null }],
@@ -87,6 +88,10 @@ describe("official Amigo enrollment boundary", () => {
 
     await expect(new SupabaseOfficialAmigoEnrollment().listEligibleAdminStudents("admin-a", 2026))
       .resolves.toEqual([{ id: "club-a", name: "Club A", students: [{ id: studentId, displayName: "Ana" }] }]);
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "admin-a"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["role", "CLUB_DIRECTOR"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "is", args: ["revoked_at", null] });
+    expect(fake.calls.some((call) => call.table === "memberships")).toBe(false);
     expect(fake.calls).toContainEqual({ table: "catalogs", method: "eq", args: ["source_catalog_code", "amigo.regular"] });
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "eq", args: ["status", "active"] });
   });

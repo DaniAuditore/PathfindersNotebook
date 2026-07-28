@@ -40,7 +40,7 @@ export async function reviewProgressAction(input: unknown) {
   if (progressError || !progress) throw new Error("Progress was not found in an accessible club.");
   const { data: enrollment, error: enrollmentError } = await supabase.from("enrollments").select("club_id, student_id").eq("id", progress.enrollment_id).single();
   if (enrollmentError || !enrollment) throw new Error("Progress was not found in an accessible club.");
-  const actor = await requireRole(enrollment.club_id, ["admin", "instructor"]);
+  const actor = await requireRole(enrollment.club_id, ["CLUB_DIRECTOR", "INSTRUCTOR"]);
   const result = await new SupabaseReviewFacade().review({ ...command, actorId: actor.id });
   revalidatePath("/dashboard");
   revalidatePath("/reviews");
@@ -78,13 +78,13 @@ export async function reviewProgressFormAction(formData: FormData) {
 
 export async function reverseProgressAction(input: unknown) {
   const command = reversalSchema.parse(input);
-  const actor = await requireRole(command.clubId, ["admin", "instructor"]);
+  const actor = await requireRole(command.clubId, ["CLUB_DIRECTOR", "INSTRUCTOR"]);
   return new SupabaseReviewFacade().reverse({ ...command, actorId: actor.id });
 }
 
 export async function manuallyCompleteProgressAction(input: unknown) {
   const command = manualSchema.parse(input);
-  await requireRole(command.clubId, ["admin", "instructor"]);
+  await requireRole(command.clubId, ["CLUB_DIRECTOR", "INSTRUCTOR"]);
   const supabase = await createSupabaseServerClient();
   const { data: enrollmentId, error } = await supabase.rpc("manually_complete_progress", { target_progress_id: command.progressId, rationale_input: command.rationale, credit_key_input: command.creditKey ?? null });
   if (error || !enrollmentId) throw new Error("Unable to manually complete this progress.");

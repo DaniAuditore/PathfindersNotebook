@@ -8,7 +8,6 @@ import { SupabaseCatalogFacade } from "../infrastructure/supabase-catalog-facade
 import { ProvisionOfficialCatalog } from "../application/provision-official-catalog";
 import amigoRegularSnapshot from "../infrastructure/official/amigo-regular.es.json";
 import { requireRole } from "@/shared/auth/session";
-import { writeActionLog } from "@/shared/observability/action-log";
 
 const publishCatalogSchema = z.object({
   clubId: z.uuid(),
@@ -18,17 +17,8 @@ const publishCatalogSchema = z.object({
 
 export async function publishCatalogAction(input: unknown) {
   const command = publishCatalogSchema.parse(input);
-  const actor = await requireRole(command.clubId, ["admin"]);
+  await requireRole(command.clubId, ["CLUB_DIRECTOR"]);
   const catalog = await new SupabaseCatalogFacade().publishDraft(command);
-
-  await writeActionLog({
-    clubId: command.clubId,
-    actorId: actor.id,
-    action: "catalog.published",
-    entityType: "catalog_version",
-    entityId: catalog.versionId,
-    metadata: { catalogId: catalog.catalogId, versionNumber: catalog.versionNumber, type: command.type },
-  });
 
   return catalog;
 }
@@ -37,7 +27,7 @@ const provisionOfficialSchema = z.object({ clubId: z.uuid() });
 
 export async function provisionOfficialAmigoAction(input: unknown) {
   const command = provisionOfficialSchema.parse(input);
-  await requireRole(command.clubId, ["admin"]);
+  await requireRole(command.clubId, ["CLUB_DIRECTOR"]);
   const result = await new ProvisionOfficialCatalog(new SupabaseCatalogFacade()).execute({
     clubId: command.clubId,
     snapshot: amigoRegularSnapshot,

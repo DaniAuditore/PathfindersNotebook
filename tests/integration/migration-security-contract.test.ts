@@ -174,4 +174,39 @@ describe("Supabase migration security contracts", () => {
     expect(evidenceAction).toContain("uploadSchema.parse(input)");
     expect(submissionAction).toContain("submissionSchema.parse(input)");
   });
+
+  it("adds only canonical, scoped role authority and keeps viewers retired", () => {
+    const canonical = migration("023_canonical_role_assignments.sql");
+    expect(canonical).toContain("create type public.canonical_role as enum");
+    for (const role of ["SYSTEM_ADMIN", "CLUB_DIRECTOR", "INSTRUCTOR", "COUNSELOR", "PATHFINDER", "GUARDIAN", "EVALUATOR"]) expect(canonical).toContain(`'${role}'`);
+    expect(canonical).toContain("case when m.role = 'viewer' then 'retired'");
+    expect(canonical).toContain("case m.role when 'admin' then 'CLUB_DIRECTOR'");
+    expect(canonical).toContain("create or replace function public.can_access_evidence");
+    expect(canonical).not.toContain("SYSTEM_ADMIN'::public.canonical_role end");
+  });
+
+  it("moves browser write callers to RPC commands before the revoke migration", () => {
+    const catalog = readFileSync(resolve(process.cwd(), "src", "modules", "catalog", "infrastructure", "supabase-catalog-facade.ts"), "utf8");
+    const enrollment = readFileSync(resolve(process.cwd(), "src", "modules", "enrollment", "infrastructure", "supabase-enrollment-facade.ts"), "utf8");
+    const commands = migration("025_command_authorized_progress_assessment_writes.sql");
+    expect(catalog).toContain('supabase.rpc("publish_catalog_draft"');
+    expect(catalog).not.toContain('.from("catalogs")\n      .insert');
+    expect(enrollment).toContain('supabase.rpc("enroll_student"');
+    expect(enrollment).not.toContain('.from("enrollments")');
+    expect(commands).toContain("security definer set search_path = public, pg_temp");
+    expect(commands).toContain("public.can_access_evidence(ev.id)");
+  });
+
+  it("discovers operational clubs from active canonical director assignments without legacy-admin fallback", () => {
+    const provisioningReader = readFileSync(resolve(process.cwd(), "src", "modules", "catalog", "infrastructure", "supabase-official-provisioning-reader.ts"), "utf8");
+    const enrollmentReader = readFileSync(resolve(process.cwd(), "src", "modules", "enrollment", "infrastructure", "supabase-official-amigo-enrollment.ts"), "utf8");
+
+    for (const reader of [provisioningReader, enrollmentReader]) {
+      expect(reader).toContain('.from("role_assignments")');
+      expect(reader).toContain('.eq("role", "CLUB_DIRECTOR")');
+      expect(reader).toContain('.is("revoked_at", null)');
+      expect(reader).not.toContain('.from("memberships")');
+      expect(reader).not.toContain('.eq("role", "admin")');
+    }
+  });
 });

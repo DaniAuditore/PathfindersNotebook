@@ -19,6 +19,7 @@ function clientWith(results: Record<string, Result[]>) {
         const query = {
           select: (...args: unknown[]) => { calls.push({ table, method: "select", args }); return query; },
           eq: (...args: unknown[]) => { calls.push({ table, method: "eq", args }); return query; },
+          is: (...args: unknown[]) => { calls.push({ table, method: "is", args }); return query; },
           in: (...args: unknown[]) => { calls.push({ table, method: "in", args }); return query; },
           order: (...args: unknown[]) => { calls.push({ table, method: "order", args }); return query; },
           then: (resolve: (value: Result) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject),
@@ -32,22 +33,24 @@ function clientWith(results: Record<string, Result[]>) {
 describe("official Amigo provisioning reader", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("derives eligible clubs from the actor's RLS-visible administrator memberships", async () => {
+  it("derives eligible clubs from the actor's RLS-visible canonical director assignments", async () => {
     const fake = clientWith({
-      memberships: [{ data: [{ club_id: "club-a" }], error: null }],
+      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
       clubs: [{ data: [{ id: "club-a", name: "Club A" }], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseOfficialProvisioningReader().listAdminClubs("actor-a"))
       .resolves.toEqual([{ id: "club-a", name: "Club A" }]);
-    expect(fake.calls).toContainEqual({ table: "memberships", method: "eq", args: ["user_id", "actor-a"] });
-    expect(fake.calls).toContainEqual({ table: "memberships", method: "eq", args: ["role", "admin"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "actor-a"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["role", "CLUB_DIRECTOR"] });
+    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "is", args: ["revoked_at", null] });
+    expect(fake.calls.some((call) => call.table === "memberships")).toBe(false);
     expect(fake.calls).toContainEqual({ table: "clubs", method: "in", args: ["id", ["club-a"]] });
   });
 
-  it("does not query clubs when the actor has no administrator membership", async () => {
-    const fake = clientWith({ memberships: [{ data: [], error: null }] });
+  it("does not query clubs when the actor has no canonical director assignment", async () => {
+    const fake = clientWith({ role_assignments: [{ data: [], error: null }] });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseOfficialProvisioningReader().listAdminClubs("actor-a")).resolves.toEqual([]);

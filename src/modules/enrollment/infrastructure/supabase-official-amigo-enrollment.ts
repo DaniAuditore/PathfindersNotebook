@@ -38,14 +38,15 @@ type VersionRow = { id: string };
 export class SupabaseOfficialAmigoEnrollment {
   async listEligibleAdminStudents(actorId: string, schoolYear: number): Promise<readonly OfficialAmigoEnrollmentClub[]> {
     const supabase = await createSupabaseServerClient();
-    const { data: memberships, error: membershipError } = await supabase
-      .from("memberships")
+    const { data: assignments, error: assignmentError } = await supabase
+      .from("role_assignments")
       .select("club_id")
       .eq("user_id", actorId)
-      .eq("role", "admin");
-    if (membershipError || !memberships) throw new Error("Unable to load administrator clubs.");
+      .eq("role", "CLUB_DIRECTOR")
+      .is("revoked_at", null);
+    if (assignmentError || !assignments) throw new Error("Unable to load administrator clubs.");
 
-    const clubIds = memberships.map((membership) => membership.club_id);
+    const clubIds = assignments.map((assignment) => assignment.club_id);
     if (clubIds.length === 0) return [];
 
     const { data: clubs, error: clubError } = await supabase.from("clubs").select("id, name").in("id", clubIds).order("name");

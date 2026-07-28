@@ -89,9 +89,9 @@ describe("official Amigo operational enrollment", () => {
     mocks.enrollStudent.mockResolvedValue({ enrollmentId: "enrollment-a", studentId, existing: false });
 
     await expect(enrollOfficialAmigoStudentAction({ studentId, clubId: "forged-club" })).resolves.toEqual({ enrollmentId: "enrollment-a", studentId, existing: false });
-    expect(mocks.requireRole).toHaveBeenCalledWith(clubId, ["admin"]);
+    expect(mocks.requireRole).toHaveBeenCalledWith(clubId, ["CLUB_DIRECTOR"]);
     expect(mocks.enrollStudent).toHaveBeenCalledWith(studentId, expect.any(Number));
-    expect(mocks.writeActionLog).toHaveBeenCalledWith(expect.objectContaining({ clubId, entityId: "enrollment-a" }));
+    expect(mocks.writeActionLog).not.toHaveBeenCalled();
   });
 
   it("returns an existing enrollment as stable success without creating a second audit event", async () => {
