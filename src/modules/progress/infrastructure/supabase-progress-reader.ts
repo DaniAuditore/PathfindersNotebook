@@ -43,7 +43,7 @@ export class SupabaseProgressReader {
   async dashboard(actorId: string): Promise<DashboardReadModel> {
     const supabase = await this.client();
     const [{ data: memberships, error: membershipError }, { data: students, error: studentError }] = await Promise.all([
-      supabase.from("memberships").select("club_id, role").eq("user_id", actorId).in("role", ["admin", "instructor"]),
+      supabase.from("role_assignments").select("club_id, role").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]),
       supabase.from("students").select("id, display_name").or(`guardian_user_id.eq.${actorId},student_user_id.eq.${actorId}`).order("display_name"),
     ]);
     const scopedMemberships = requireData(memberships, membershipError, "Unable to load club roles.") as { club_id: string; role: string }[];
@@ -62,7 +62,7 @@ export class SupabaseProgressReader {
 
   async reviewQueue(actorId: string): Promise<ReviewQueueItem[]> {
     const supabase = await this.client();
-    const { data: memberships, error: membershipError } = await supabase.from("memberships").select("club_id").eq("user_id", actorId).in("role", ["admin", "instructor"]);
+    const { data: memberships, error: membershipError } = await supabase.from("role_assignments").select("club_id").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
     const clubIds = (requireData(memberships, membershipError, "Unable to load reviewer clubs.") as { club_id: string }[]).map((row) => row.club_id);
     if (clubIds.length === 0) return [];
 

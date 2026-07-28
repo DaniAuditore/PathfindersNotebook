@@ -77,7 +77,7 @@ describe("progress server actions", () => {
     mocks.requireRole.mockRejectedValue(new Error("not authorized"));
 
     await expect(reviewProgressAction({ progressId, attemptId, decision: "accepted" })).rejects.toThrow("not authorized");
-    expect(mocks.requireRole).toHaveBeenCalledWith("club-b", ["admin", "instructor"]);
+    expect(mocks.requireRole).toHaveBeenCalledWith("club-b", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
     expect(mocks.review).not.toHaveBeenCalled();
   });
 

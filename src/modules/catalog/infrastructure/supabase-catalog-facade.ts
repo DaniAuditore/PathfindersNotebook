@@ -20,21 +20,13 @@ export class SupabaseCatalogFacade implements CatalogFacade {
 
   async publishDraft(draft: CatalogDraft): Promise<PublishedCatalogVersion> {
     const supabase = await createSupabaseServerClient();
-    const { data: catalog, error: catalogError } = await supabase
-      .from("catalogs")
-      .insert({ club_id: draft.clubId, class_type: draft.type, title: draft.title })
-      .select("id")
-      .single();
-    if (catalogError) throw new Error("Unable to create the catalog.");
-
-    const { data: version, error: versionError } = await supabase
-      .from("catalog_versions")
-      .insert({ catalog_id: catalog.id, version_number: 1, status: "published", published_at: new Date().toISOString() })
-      .select("id, version_number")
-      .single();
-    if (versionError) throw new Error("Unable to publish the catalog version.");
-
-    return { catalogId: catalog.id, versionId: version.id, versionNumber: version.version_number };
+    const { data, error } = await supabase.rpc("publish_catalog_draft", {
+      target_club_id: draft.clubId,
+      class_type_input: draft.type,
+      title_input: draft.title,
+    });
+    if (error || !isProvisionResponse(data)) throw new Error("Unable to publish the catalog version.");
+    return data;
   }
 
   async provisionOfficial(

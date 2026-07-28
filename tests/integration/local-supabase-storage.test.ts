@@ -219,6 +219,20 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       });
     failOnApiError("Unable to create student fixture", studentRecordError);
 
+    // 023 intentionally stopped treating a legacy membership as write authority.
+    // Use the service-only bootstrap RPC for the initial director grants instead
+    // of restoring direct role_assignments DML to any API role.
+    const directorBootstraps = await Promise.all([
+      serviceClient.rpc("bootstrap_club_director", { target_user_id: admin.id, target_club_id: clubId }),
+      serviceClient.rpc("bootstrap_club_director", { target_user_id: admin.id, target_club_id: driftClubId }),
+      serviceClient.rpc("bootstrap_club_director", { target_user_id: admin.id, target_club_id: partialClubId }),
+      serviceClient.rpc("bootstrap_club_director", { target_user_id: foreign.id, target_club_id: driftClubId }),
+    ]);
+    for (const bootstrap of directorBootstraps) {
+      failOnApiError("Unable to bootstrap a canonical club director fixture", bootstrap.error);
+      expect(bootstrap.data).toEqual(expect.any(String));
+    }
+
     const catalogId = randomUUID();
     const { error: catalogError } = await serviceClient
       .from("catalogs")
@@ -307,6 +321,15 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       expect(error).toBeNull();
       expect(data.user?.id).toBe(fixture.id);
     }
+  });
+
+  it("keeps canonical director bootstrap exclusive to the platform service", async () => {
+    const denied = await adminClient.rpc("bootstrap_club_director", {
+      target_user_id: fixtures.admin.id,
+      target_club_id: fixtures.clubId,
+    });
+    expect(denied.data).toBeNull();
+    expect(denied.error?.code).toBe("42501");
   });
 
   it("serializes concurrent official-catalog provisioning into one complete publication", async () => {
@@ -481,7 +504,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     }
   }, LOCAL_TEST_TIMEOUT_MS);
 
-  it("rejects canonical drift and unauthorized direct RPC actors without state or audit", async () => {
+  it("rejects canonical drift plus cross-club and unauthorized RPC actors without state or audit", async () => {
     const drifted = structuredClone(amigoRegularSnapshot);
     drifted.requirements[0].title = "Different title";
     const driftCall = await adminClient.rpc("provision_official_amigo_catalog", {
@@ -491,14 +514,21 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     expect(driftCall.data).toBeNull();
     expect(driftCall.error?.code).toBe("23514");
 
-    for (const client of [foreignClient, anonymousClient]) {
-      const denied = await client.rpc("provision_official_amigo_catalog", {
-        target_club_id: fixtures.clubId,
-        snapshot: amigoRegularSnapshot,
-      });
-      expect(denied.data).toBeNull();
-      expect(denied.error?.code).toBe("42501");
-    }
+    // foreignClient is a CLUB_DIRECTOR, but only for driftClubId. A canonical
+    // director assignment must not confer provisioning authority in another club.
+    const crossClubDenied = await foreignClient.rpc("provision_official_amigo_catalog", {
+      target_club_id: fixtures.clubId,
+      snapshot: amigoRegularSnapshot,
+    });
+    expect(crossClubDenied.data).toBeNull();
+    expect(crossClubDenied.error?.code).toBe("42501");
+
+    const anonymousDenied = await anonymousClient.rpc("provision_official_amigo_catalog", {
+      target_club_id: fixtures.clubId,
+      snapshot: amigoRegularSnapshot,
+    });
+    expect(anonymousDenied.data).toBeNull();
+    expect(anonymousDenied.error?.code).toBe("42501");
 
     const catalogs = await adminClient.from("catalogs").select("id", { count: "exact", head: true })
       .eq("club_id", fixtures.driftClubId).not("level_template_id", "is", null);

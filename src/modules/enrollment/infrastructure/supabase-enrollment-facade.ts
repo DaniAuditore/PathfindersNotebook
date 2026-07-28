@@ -7,27 +7,16 @@ import { createSupabaseServerClient } from "@/shared/supabase/server";
 export class SupabaseEnrollmentFacade implements EnrollmentFacade {
   async enroll(command: EnrollStudentCommand): Promise<Enrollment> {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("enrollments")
-      .insert({
-        club_id: command.clubId,
-        student_id: command.studentId,
-        catalog_id: command.catalogId,
-        catalog_version_id: command.catalogVersionId,
-        school_year: command.schoolYear,
-        enrolled_by: command.actorId,
-      })
-      .select("id, club_id, student_id, catalog_id, catalog_version_id, school_year")
-      .single();
+    const { data, error } = await supabase.rpc("enroll_student", {
+      target_student_id: command.studentId,
+      target_catalog_id: command.catalogId,
+      target_catalog_version_id: command.catalogVersionId,
+      target_school_year: command.schoolYear,
+    });
     if (error) throw new Error("Unable to enroll the student in this class version.");
-
+    if (!isEnrollmentResponse(data)) throw new Error("The enrollment command returned an invalid response.");
     return {
-      id: data.id,
-      clubId: data.club_id,
-      studentId: data.student_id,
-      catalogId: data.catalog_id,
-      catalogVersionId: data.catalog_version_id,
-      schoolYear: data.school_year,
+      id: data.id, clubId: data.clubId, studentId: data.studentId, catalogId: data.catalogId, catalogVersionId: data.catalogVersionId, schoolYear: data.schoolYear,
     };
   }
 
@@ -39,4 +28,10 @@ export class SupabaseEnrollmentFacade implements EnrollmentFacade {
     });
     if (error) throw new Error("Unable to migrate the enrollment to the requested version.");
   }
+}
+
+function isEnrollmentResponse(value: unknown): value is Enrollment {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return ["id", "clubId", "studentId", "catalogId", "catalogVersionId"].every((key) => typeof candidate[key] === "string") && typeof candidate.schoolYear === "number";
 }

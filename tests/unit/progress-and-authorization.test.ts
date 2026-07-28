@@ -20,7 +20,7 @@ function records(...acceptedRequirementIds: string[]): ProgressRecord[] {
   return acceptedRequirementIds.map((requirementId) => ({ requirementId, status: "accepted" }));
 }
 
-function authenticatedClientWithRole(role: "admin" | "instructor" | null) {
+function authenticatedClientWithRole(role: "CLUB_DIRECTOR" | "INSTRUCTOR" | null) {
   const maybeSingle = vi.fn().mockResolvedValue({ data: role ? { role } : null, error: null });
   const allowedRoles = vi.fn().mockReturnValue({ maybeSingle });
   const userId = vi.fn().mockReturnValue({ in: allowedRoles });
@@ -63,14 +63,14 @@ describe("server authorization policies", () => {
       .mockResolvedValueOnce(authenticatedSessionClient)
       .mockResolvedValueOnce(authenticatedClientWithRole(null));
 
-    await expect(requireRole("club-a", ["admin"])).rejects.toBeInstanceOf(AuthorizationError);
+    await expect(requireRole("club-a", ["CLUB_DIRECTOR"])).rejects.toBeInstanceOf(AuthorizationError);
   });
 
   it("denies a role-authorized actor when the resource belongs to another club", async () => {
     createSupabaseServerClient
       .mockResolvedValueOnce(authenticatedSessionClient)
-      .mockResolvedValueOnce(authenticatedClientWithRole("instructor"));
+      .mockResolvedValueOnce(authenticatedClientWithRole("INSTRUCTOR"));
 
-    await expect(requireClubResourceScope("club-a", ["instructor"], async () => false)).rejects.toThrow("outside this club");
+    await expect(requireClubResourceScope("club-a", ["INSTRUCTOR"], async () => false)).rejects.toThrow("outside this club");
   });
 });

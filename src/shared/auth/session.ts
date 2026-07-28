@@ -9,7 +9,7 @@ export class AuthorizationError extends Error {
   }
 }
 
-export type ClubRole = "admin" | "instructor" | "guardian" | "student" | "viewer";
+export type CanonicalRole = "SYSTEM_ADMIN" | "CLUB_DIRECTOR" | "INSTRUCTOR" | "COUNSELOR" | "PATHFINDER" | "GUARDIAN" | "EVALUATOR";
 
 export interface SessionActor {
   id: string;
@@ -25,11 +25,11 @@ export async function requireSession(): Promise<SessionActor> {
   return { id: data.user.id, email: data.user.email };
 }
 
-export async function requireRole(clubId: string, allowedRoles: readonly ClubRole[]): Promise<SessionActor> {
+export async function requireRole(clubId: string, allowedRoles: readonly CanonicalRole[]): Promise<SessionActor> {
   const actor = await requireSession();
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("memberships")
+    .from("role_assignments")
     .select("role")
     .eq("club_id", clubId)
     .eq("user_id", actor.id)
@@ -42,7 +42,7 @@ export async function requireRole(clubId: string, allowedRoles: readonly ClubRol
 
 export async function requireClubResourceScope(
   clubId: string,
-  allowedRoles: readonly ClubRole[],
+  allowedRoles: readonly CanonicalRole[],
   resourceBelongsToClub: (clubId: string) => Promise<boolean>,
 ): Promise<SessionActor> {
   const actor = await requireRole(clubId, allowedRoles);

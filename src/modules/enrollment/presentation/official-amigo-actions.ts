@@ -6,7 +6,6 @@ import { z } from "zod";
 
 import { OfficialAmigoEnrollmentFailure, SupabaseOfficialAmigoEnrollment } from "../infrastructure/supabase-official-amigo-enrollment";
 import { requireRole } from "@/shared/auth/session";
-import { writeActionLog } from "@/shared/observability/action-log";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
 const schema = z.object({ studentId: z.uuid() });
@@ -24,11 +23,8 @@ export async function enrollOfficialAmigoStudentAction(input: unknown) {
   if (error || !student) throw new Error("Eligible student not found.");
 
   // Student identity is untrusted input. Resolve its club first, then re-authorize.
-  const actor = await requireRole(student.club_id, ["admin"]);
+  await requireRole(student.club_id, ["CLUB_DIRECTOR"]);
   const result = await new SupabaseOfficialAmigoEnrollment().enrollStudent(command.studentId, schoolYear);
-  if (!result.existing) {
-    await writeActionLog({ clubId: student.club_id, actorId: actor.id, action: "enrollment.official_amigo_created", entityType: "enrollment", entityId: result.enrollmentId, metadata: { schoolYear } });
-  }
   return result;
 }
 
