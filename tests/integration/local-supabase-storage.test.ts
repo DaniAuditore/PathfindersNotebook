@@ -15,6 +15,7 @@ const CLOSED_DIRECT_DML_TABLES = [
   "memberships", "students", "role_assignments", "enrollments", "requirement_progress",
   "progress_attempts", "progress_reviews", "assessments", "investitures", "evidence",
   "attempt_evidence", "audit_log",
+  "organizations", "units", "evidence_upload_rate_limits",
 ] as const;
 
 interface LocalSupabaseEnvironment {
@@ -338,7 +339,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     expect(denied.error?.code).toBe("42501");
   });
 
-  it("denies real Auth and anonymous raw DML across every closed domain table", async () => {
+  it("denies real Auth and anonymous raw DML across every closed domain and privileged-UI table", async () => {
     for (const client of [adminClient, anonymousClient]) {
       for (const table of CLOSED_DIRECT_DML_TABLES) {
         const result = await client.from(table).delete().eq("id", randomUUID());
