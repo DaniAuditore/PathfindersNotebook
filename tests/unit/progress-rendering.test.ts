@@ -33,7 +33,7 @@ describe("UX progress rendering", () => {
 
     const html = renderToStaticMarkup(await DashboardPage({ searchParams: Promise.resolve({ error: "Sign out failed. You are still signed in. Please try again." }) }));
     expect(html).toContain('role="alert"');
-    expect(html).toContain("No pudimos completar esa acción. Intentá de nuevo.");
+    expect(html).toContain("No fue posible completar la acción. Inténtalo de nuevo.");
     expect(html).toContain("Abrir cola de revisiones");
     expect(html).toContain("Learner A");
     expect(html).toContain("50% aprobado");
@@ -89,8 +89,26 @@ describe("UX progress rendering", () => {
     expect(html).toContain("Part of: Bible checklist");
     expect(html).toContain("Aprobar entrega");
     expect(html).toContain("Solicitar cambios");
+    expect(html).toContain('class="review-decision review-decision--approve"');
+    expect(html).toContain('class="review-decision review-decision--changes"');
+    expect(html).toContain('class="button--request-changes"');
+    expect(html).toContain('value="accepted" type="submit" aria-busy="false" name="decision"');
+    expect(html).toContain('value="rejected" type="submit" aria-busy="false" name="decision"');
+    expect(html).toContain("Confirme que la entrega cumple el requisito antes de aprobarla.");
+    expect(html).toContain("Indique el motivo para que el alumno pueda corregir la entrega.");
     expect(html).toContain("required");
     expect(html).toContain('role="status"');
     expect(html).toContain('tabindex="-1"');
+  });
+
+  it("uses neutral guidance when showing the next pending requirement", async () => {
+    mocks.learner.mockResolvedValue({
+      studentId: "student-a", displayName: "Learner A", enrollments: [{
+        enrollmentId: "enrollment-a", catalogTitle: "Amigo", schoolYear: 2026, approvedPercentage: 0, requirements: [],
+      }],
+    });
+
+    const html = renderToStaticMarkup(await StudentPage({ params: Promise.resolve({ studentId: "student-a" }), searchParams: Promise.resolve({}) }));
+    expect(html).toContain("Abra una sección para consultar el próximo requisito pendiente.");
   });
 });

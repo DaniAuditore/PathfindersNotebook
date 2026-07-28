@@ -26,6 +26,8 @@ describe("shell PWA seguro", () => {
     expect(worker).toContain('url.origin !== self.location.origin');
     expect(worker).toContain('if (request.mode === "navigate")');
     expect(worker).toContain('if (url.pathname !== "/login") return');
+    expect(worker).toContain('if (request.method !== "GET") return');
+    expect(worker).toContain('if (!url.pathname.startsWith("/_next/static/")) return');
     expect(worker).toContain('event.respondWith(fetch(request).catch(async () => {');
     expect(worker).toContain('cache.put(request, response.clone())');
     expect(worker).not.toContain("clients.claim");

@@ -10,7 +10,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="page">
       <PageHeader title="Iniciar sesión" description="Usá el correo y la contraseña proporcionados por tu club." />
-      {error ? <Notice kind="error" focusOnRender message="No pudimos iniciar sesión. Verificá tu correo y contraseña e intentá de nuevo." /> : null}
+      {error ? <Notice kind="error" focusOnRender message="No pudimos iniciar sesión. Verifique su correo y contraseña e inténtelo de nuevo." /> : null}
       <form action={loginAction}>
         <div className="card stack"><div className="form-field"><label htmlFor="email">Correo electrónico</label><input id="email" name="email" type="email" autoComplete="email" defaultValue={recoveryEmail} required /></div><div className="form-field"><label htmlFor="password">Contraseña</label><input id="password" name="password" type="password" autoComplete="current-password" required /></div><SubmitButton pendingLabel="Iniciando sesión…">Iniciar sesión</SubmitButton></div>
       </form>

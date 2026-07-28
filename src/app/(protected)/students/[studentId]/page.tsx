@@ -4,7 +4,8 @@ import { SupabaseProgressReader } from "@/modules/progress/infrastructure/supaba
 import { submitProgressFormAction } from "@/modules/review/presentation/actions";
 import { requireSession } from "@/shared/auth/session";
 import { EmptyState } from "@/shared/ui/empty-state";
-import { Notice } from "@/shared/ui/notice";
+import { ActionResult } from "@/shared/ui/action-result";
+import { DeferredState } from "@/shared/ui/deferred-state";
 import { PageHeader } from "@/shared/ui/page-header";
 import { ProgressSummary } from "@/shared/ui/progress-summary";
 import { StatusBadge } from "@/shared/ui/status-badge";
@@ -27,10 +28,10 @@ function RequirementTree({ requirement, studentId }: { requirement: import("@/mo
       <p><strong>Tipo:</strong> {isDerived ? "Requisito compuesto" : modality}</p>
       {requirement.instructions ? <p>{requirement.instructions}</p> : null}
       {requirement.reviewReason ? <p><strong>Motivo de revisión:</strong> {requirement.reviewReason}</p> : null}
-      {requirement.history.length > 0 ? <details><summary>Historial de entregas ({requirement.history.length})</summary><ol>{requirement.history.map((attempt) => <li key={attempt.attemptId}>Intento {attempt.attemptNumber}: {attempt.submissionText || "Sin texto"} — {attempt.decision ? statusLabel[attempt.decision] : "Esperando revisión"}{attempt.decisionReason ? ` (${attempt.decisionReason})` : ""}</li>)}</ol></details> : null}
+       {requirement.history.length > 0 ? <details><summary>Historial de entregas ({requirement.history.length})</summary><ol>{requirement.history.map((attempt) => <li key={attempt.attemptId}>Intento {attempt.attemptNumber}: {attempt.submissionText || "Sin texto"} — {attempt.decision ? statusLabel[attempt.decision] : "Esperando revisión"}{attempt.decisionReason ? ` (${attempt.decisionReason})` : ""} · <time dateTime={attempt.submittedAt}>{new Intl.DateTimeFormat("es", { dateStyle: "medium", timeStyle: "short" }).format(new Date(attempt.submittedAt))}</time></li>)}</ol></details> : null}
       {canSubmitText ? <form action={submitProgressFormAction}><input type="hidden" name="progressId" value={requirement.progressId} /><input type="hidden" name="studentId" value={studentId} /><p className="form-field"><label htmlFor={`submission-${requirement.progressId}`}>Texto de la entrega</label><textarea id={`submission-${requirement.progressId}`} name="submissionText" required maxLength={10000} /></p><SubmitButton pendingLabel="Enviando…">{requirement.status === "rejected" ? "Reenviar para revisión" : "Enviar para revisión"}</SubmitButton></form> : null}
-      {!canSubmitText && requirement.requiresEvidence ? <p>Este requisito necesita evidencia y no se puede enviar como texto.</p> : null}
-      {!canSubmitText && modalities.includes("practical_in_person") ? <p>Este requisito práctico requiere la gestión presencial de un instructor.</p> : null}
+       {!canSubmitText && requirement.requiresEvidence ? <p>Este requisito necesita validación presencial. La carga de evidencia no está disponible.</p> : null}
+       {!canSubmitText && modalities.includes("practical_in_person") ? <p>Este requisito práctico requiere la gestión presencial de un instructor.</p> : null}
       {children.length > 0 ? <ol aria-label={`${requirement.title} items`}>{children.map((child) => <RequirementTree key={child.requirementId} requirement={child} studentId={studentId} />)}</ol> : null}
       </article>
     </details>
@@ -46,14 +47,15 @@ export default async function StudentPage({ params, searchParams }: { params: Pr
 
   return (
     <><PageHeader title={learner.displayName} description="Progreso de aprendizaje" />
-      {notice.message ? <Notice kind="success" message={notice.message} /> : null}{notice.error ? <Notice kind="error" message="No pudimos completar esa acción. Intentá de nuevo." /> : null}
+      {notice.message ? <ActionResult kind="success" message={notice.message} /> : null}{notice.error ? <ActionResult kind="error" message="No fue posible completar la acción. Inténtalo de nuevo." /> : null}
       {learner.enrollments.length === 0 ? <EmptyState title="Sin inscripción activa" /> : learner.enrollments.map((enrollment) => (
         <section key={enrollment.enrollmentId}>
           <h2>{enrollment.catalogTitle} — {enrollment.schoolYear}</h2>
-          <ProgressSummary percentage={enrollment.approvedPercentage} nextAction="Abrí una sección para consultar el próximo requisito pendiente." />
+          <ProgressSummary percentage={enrollment.approvedPercentage} nextAction="Abra una sección para consultar el próximo requisito pendiente." />
           {(enrollment.sections ?? [{ sectionId: "legacy-requirements", title: "Requisitos", approvedPercentage: enrollment.approvedPercentage, requirements: enrollment.requirements }]).map((section) => <details key={section.sectionId} className="card"><summary id={`section-${section.sectionId}`}>{section.title} — {section.approvedPercentage}% aprobado</summary><section aria-labelledby={`section-${section.sectionId}`}><h3>{section.title}</h3>{section.requirements.length === 0 ? <p>No hay requisitos disponibles en esta sección.</p> : <ol>{section.requirements.map((requirement) => <RequirementTree key={requirement.requirementId} requirement={requirement} studentId={learner.studentId} />)}</ol>}</section></details>)}
         </section>
       ))}
+      <DeferredState title="Opciones no disponibles">La vinculación de cuentas, las exportaciones y las notificaciones no están disponibles para este alumno.</DeferredState>
     </>
   );
 }

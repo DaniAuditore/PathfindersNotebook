@@ -54,7 +54,7 @@ export function ServiceWorkerRegistration() {
   return (
     <aside className="pwa-update" aria-labelledby="pwa-update-title" role="status">
       <p id="pwa-update-title"><strong>Hay una actualización disponible.</strong></p>
-      <p>Podés aplicarla cuando termines lo que estás haciendo.</p>
+      <p>Puede aplicarla cuando termine lo que está haciendo.</p>
       <div className="pwa-update__actions">
         <button type="button" onClick={() => {
           if (!waitingWorker.current) return;

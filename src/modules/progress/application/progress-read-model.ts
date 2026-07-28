@@ -54,6 +54,15 @@ export interface LearnerSummary {
 export interface DashboardReadModel {
   learners: LearnerSummary[];
   canReview: boolean;
+  cohort: CohortSummary | null;
+}
+
+export interface CohortSummary {
+  enrolled: number;
+  submitted: number;
+  accepted: number;
+  rejected: number;
+  oldestPendingAt: string | null;
 }
 
 export interface ReviewQueueItem {
@@ -65,6 +74,7 @@ export interface ReviewQueueItem {
   childContext: string | null;
   submissionText: string | null;
   submittedAt: string;
+  queueAgeDays: number;
 }
 
 export interface ProgressRequirementRow extends ProgressRequirement {

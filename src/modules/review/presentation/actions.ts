@@ -49,15 +49,15 @@ export async function reviewProgressAction(input: unknown) {
 }
 
 function messageFor(error: unknown) {
-  return error instanceof z.ZodError ? error.issues[0]?.message ?? "The form is invalid." : "The action could not be completed.";
+  return error instanceof z.ZodError ? "El formulario no es válido." : "No fue posible completar la acción.";
 }
 
 export async function submitProgressFormAction(formData: FormData) {
-  let destination = "/dashboard?error=The+action+could+not+be+completed.";
+  let destination = "/dashboard?error=No+fue+posible+completar+la+acción.";
   const studentId = z.uuid().safeParse(formData.get("studentId"));
   try {
     await submitProgressAction({ progressId: formData.get("progressId"), submissionText: formData.get("submissionText") });
-    destination = studentId.success ? `/students/${studentId.data}?message=Progress+submitted.` : "/dashboard?message=Progress+submitted.";
+    destination = studentId.success ? `/students/${studentId.data}?message=Entrega+enviada+para+revisión.` : "/dashboard?message=Entrega+enviada+para+revisión.";
   } catch (error) {
     const message = encodeURIComponent(messageFor(error));
     destination = studentId.success ? `/students/${studentId.data}?error=${message}` : `/dashboard?error=${message}`;
@@ -66,10 +66,10 @@ export async function submitProgressFormAction(formData: FormData) {
 }
 
 export async function reviewProgressFormAction(formData: FormData) {
-  let destination = "/reviews?error=The+action+could+not+be+completed.";
+  let destination = "/reviews?error=No+fue+posible+completar+la+acción.";
   try {
     await reviewProgressAction({ progressId: formData.get("progressId"), attemptId: formData.get("attemptId"), decision: formData.get("decision"), reason: formData.get("reason") || undefined });
-    destination = "/reviews?message=Review+saved.";
+    destination = "/reviews?message=Revisión+guardada.";
   } catch (error) {
     destination = `/reviews?error=${encodeURIComponent(messageFor(error))}`;
   }

@@ -49,7 +49,8 @@ export class SupabaseProgressReader {
     const scopedMemberships = requireData(memberships, membershipError, "Unable to load club roles.") as { club_id: string; role: string }[];
     const learnerRows = requireData(students, studentError, "Unable to load linked learners.") as { id: string; display_name: string }[];
     const learners = await Promise.all(learnerRows.map(async (student) => ({ studentId: student.id, displayName: student.display_name, enrollments: await this.activeEnrollmentsForStudent(student.id, supabase) })));
-    return { learners, canReview: scopedMemberships.length > 0 };
+    const clubIds = scopedMemberships.map((membership) => membership.club_id).filter((clubId): clubId is string => Boolean(clubId));
+    return { learners, canReview: clubIds.length > 0, cohort: await this.cohortSummary(clubIds, supabase) };
   }
 
   async learner(studentId: string): Promise<LearnerSummary | null> {
@@ -95,8 +96,26 @@ export class SupabaseProgressReader {
       if (!progressRow || !enrollment) return [];
       const requirement = requirementRows.find((row) => row.id === progressRow.requirement_id);
       const rootRequirementTitle = requirement?.parent_requirement_id ? rootTitles.get(requirement.parent_requirement_id) ?? null : null;
-      return [{ progressId: progressRow.id, attemptId: attempt.id, studentName: studentNames.get(enrollment.student_id) ?? "Learner", requirementTitle: requirementTitles.get(progressRow.requirement_id) ?? "Requirement", rootRequirementTitle, childContext: rootRequirementTitle ? `Part of: ${rootRequirementTitle}` : null, submissionText: attempt.submission_text, submittedAt: attempt.submitted_at }];
+      const queueAgeDays = Math.max(0, Math.floor((Date.now() - new Date(attempt.submitted_at).getTime()) / 86_400_000));
+      return [{ progressId: progressRow.id, attemptId: attempt.id, studentName: studentNames.get(enrollment.student_id) ?? "Alumno", requirementTitle: requirementTitles.get(progressRow.requirement_id) ?? "Requisito", rootRequirementTitle, childContext: rootRequirementTitle ? `Parte de: ${rootRequirementTitle}` : null, submissionText: attempt.submission_text, submittedAt: attempt.submitted_at, queueAgeDays }];
     });
+  }
+
+  private async cohortSummary(clubIds: readonly string[], supabase: SupabaseClient): Promise<DashboardReadModel["cohort"]> {
+    if (clubIds.length === 0) return null;
+    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id").in("club_id", clubIds).eq("status", "active");
+    const enrollmentRows = requireData(enrollments, enrollmentError, "Unable to load scoped enrollment counts.") as { id: string }[];
+    if (enrollmentRows.length === 0) return { enrolled: 0, submitted: 0, accepted: 0, rejected: 0, oldestPendingAt: null };
+    const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("id, status").in("enrollment_id", ids(enrollmentRows));
+    const progressRows = requireData(progress, progressError, "Unable to load scoped progress counts.") as { id: string; status: ProgressStatus }[];
+    const submittedIds = progressRows.filter((row) => row.status === "submitted").map((row) => row.id);
+    let oldestPendingAt: string | null = null;
+    if (submittedIds.length > 0) {
+      const { data: pending, error: pendingError } = await supabase.from("progress_attempts").select("submitted_at").in("progress_id", submittedIds).is("decision", null).order("submitted_at", { ascending: true }).limit(1);
+      const pendingRows = requireData(pending, pendingError, "Unable to load pending review age.") as { submitted_at: string }[];
+      oldestPendingAt = pendingRows[0]?.submitted_at ?? null;
+    }
+    return { enrolled: enrollmentRows.length, submitted: submittedIds.length, accepted: progressRows.filter((row) => row.status === "accepted").length, rejected: progressRows.filter((row) => row.status === "rejected").length, oldestPendingAt };
   }
 
   private async activeEnrollmentsForStudent(studentId: string, supabase: SupabaseClient): Promise<EnrollmentProgressReadModel[]> {
