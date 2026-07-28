@@ -23,6 +23,7 @@ function clientWith(results: Record<string, Result[]>) {
           is: (...args: unknown[]) => { calls.push({ table, method: "is", args }); return query; },
           or: (...args: unknown[]) => { calls.push({ table, method: "or", args }); return query; },
           order: (...args: unknown[]) => { calls.push({ table, method: "order", args }); return query; },
+          limit: (...args: unknown[]) => { calls.push({ table, method: "limit", args }); return query; },
           maybeSingle: () => Promise.resolve(result),
           single: () => Promise.resolve(result),
           then: (resolve: (value: Result) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject),
@@ -40,10 +41,11 @@ describe("Supabase progress read boundaries", () => {
     const fake = clientWith({
       role_assignments: [{ data: [{ club_id: "club-a", role: "INSTRUCTOR" }], error: null }],
       students: [{ data: [], error: null }],
+      enrollments: [{ data: [], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
-    await expect(new SupabaseProgressReader().dashboard("actor-a")).resolves.toEqual({ learners: [], canReview: true });
+    await expect(new SupabaseProgressReader().dashboard("actor-a")).resolves.toEqual({ learners: [], canReview: true, cohort: { enrolled: 0, submitted: 0, accepted: 0, rejected: 0, oldestPendingAt: null } });
     expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "actor-a"] });
     expect(fake.calls).toContainEqual({ table: "role_assignments", method: "in", args: ["role", ["CLUB_DIRECTOR", "INSTRUCTOR"]] });
     expect(fake.calls).toContainEqual({ table: "students", method: "or", args: ["guardian_user_id.eq.actor-a,student_user_id.eq.actor-a"] });
@@ -62,7 +64,7 @@ describe("Supabase progress read boundaries", () => {
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "eq", args: ["status", "active"] });
   });
 
-  it("projects a child attempt with its root Part of context", async () => {
+  it("projects a child attempt with its root context and queue age", async () => {
     const fake = clientWith({
       role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
       enrollments: [{ data: [{ id: "enrollment-a", student_id: "student-a" }], error: null }],
@@ -82,9 +84,10 @@ describe("Supabase progress read boundaries", () => {
       studentName: "Learner A",
       requirementTitle: "Genesis 1",
       rootRequirementTitle: "Bible checklist",
-      childContext: "Part of: Bible checklist",
+      childContext: "Parte de: Bible checklist",
       submissionText: "Finished Genesis 1",
       submittedAt: "2026-07-27",
+      queueAgeDays: expect.any(Number),
     }]);
     expect(fake.calls).toContainEqual({ table: "requirements", method: "in", args: ["id", ["root-a"]] });
   });

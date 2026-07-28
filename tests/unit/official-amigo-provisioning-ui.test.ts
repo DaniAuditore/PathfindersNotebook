@@ -40,7 +40,7 @@ describe("official Amigo operational provisioning", () => {
     const html = renderToStaticMarkup(await ClassesPage({ searchParams: Promise.resolve({ message: "Official regular Amigo is ready for this club." }) }));
 
     expect(html).toContain("Preparación oficial de Amigo");
-    expect(html).toContain("catálogo oficial regular e inmutable de Amigo");
+    expect(html).toContain("catálogo oficial, regular e inmutable de Amigo");
     expect(html).toContain("Club A");
     expect(html).toContain("Preparar Amigo regular oficial");
     expect(html).toContain('role="status"');
@@ -52,7 +52,7 @@ describe("official Amigo operational provisioning", () => {
 
     const html = renderToStaticMarkup(await ClassesPage({ searchParams: Promise.resolve({}) }));
 
-    expect(html).toContain("Necesitás una membresía de administrador");
+    expect(html).toContain("Se necesita una membresía de dirección de club");
     expect(html).not.toContain("Preparar Amigo regular oficial</button>");
   });
 

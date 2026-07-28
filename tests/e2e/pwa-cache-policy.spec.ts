@@ -109,10 +109,11 @@ test("no almacena API, evidencia, Supabase, POST ni otras navegaciones", async (
       attempt("/api/does-not-exist"),
       attempt("/api/files/private-evidence"),
       attempt("https://example.invalid/rest/v1/private_evidence"),
+      attempt("/dashboard"),
       attempt("/api/does-not-exist", { method: "POST" }),
     ]);
   });
-  expect(outcomes).toEqual(["rejected", "rejected", "rejected", "rejected"]);
+  expect(outcomes).toEqual(["rejected", "rejected", "rejected", "rejected", "rejected"]);
 
   await expect(cachedPaths(page)).resolves.toEqual(["/offline.html"]);
   await context.close();

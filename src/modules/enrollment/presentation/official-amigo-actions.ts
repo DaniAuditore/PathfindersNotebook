@@ -10,9 +10,9 @@ import { createSupabaseServerClient } from "@/shared/supabase/server";
 
 const schema = z.object({ studentId: z.uuid() });
 const messages = {
-  created: "Student enrolled in official regular Amigo for this year.",
-  existing: "Student is already enrolled in official regular Amigo for this year.",
-  error: "Official Amigo enrollment could not be completed.",
+  created: "El alumno quedó inscrito en Amigo regular oficial para este año.",
+  existing: "El alumno ya estaba inscrito en Amigo regular oficial para este año.",
+  error: "No fue posible completar la inscripción oficial de Amigo.",
 } as const;
 
 export async function enrollOfficialAmigoStudentAction(input: unknown) {
@@ -34,7 +34,7 @@ export async function enrollOfficialAmigoStudentFormAction(formData: FormData) {
     const result = await enrollOfficialAmigoStudentAction({ studentId: formData.get("studentId") });
     revalidatePath("/enrollments");
     revalidatePath(`/students/${result.studentId}`);
-    destination = `/enrollments?message=${encodeURIComponent(result.existing ? messages.existing : messages.created)}`;
+    destination = `/enrollments?message=${encodeURIComponent(result.existing ? messages.existing : messages.created)}&studentId=${encodeURIComponent(result.studentId)}`;
   } catch (error) {
     // Do not expose authorization or database detail from this administrative form.
     logEnrollmentFailure(error);

@@ -57,7 +57,7 @@ describe("official Amigo operational enrollment", () => {
     const html = renderToStaticMarkup(await EnrollmentsPage({ searchParams: Promise.resolve({ message: "Student enrolled in official regular Amigo for this year." }) }));
 
     expect(html).toContain("Inscripción oficial de Amigo");
-    expect(html).toContain("catálogo oficial regular de Amigo ya preparado");
+    expect(html).toContain("catálogo oficial regular de Amigo preparado");
     expect(html).toContain("Ana");
     expect(html).toContain("Inscribir en Amigo regular oficial");
     expect(html).toContain(`href="/students/${studentId}"`);
@@ -121,7 +121,7 @@ describe("official Amigo operational enrollment", () => {
 
     await expect(enrollOfficialAmigoStudentFormAction(form)).rejects.toThrow("redirect");
 
-    expect(mocks.redirect).toHaveBeenCalledWith("/enrollments?error=Official%20Amigo%20enrollment%20could%20not%20be%20completed.");
+    expect(mocks.redirect).toHaveBeenCalledWith("/enrollments?error=No%20fue%20posible%20completar%20la%20inscripci%C3%B3n%20oficial%20de%20Amigo.");
     expect(errorSpy).toHaveBeenCalledWith({
       event: "official_amigo_enrollment_failed",
       code: "official_amigo_enrollment_unexpected",

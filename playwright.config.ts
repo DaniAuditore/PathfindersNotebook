@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch: ["**/*.spec.ts", "**/ui-journeys.test.ts"],
+  testMatch: ["**/*.spec.ts", "**/ui-journeys.test.ts", "**/operational-ui-authorization.test.ts"],
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   use: {

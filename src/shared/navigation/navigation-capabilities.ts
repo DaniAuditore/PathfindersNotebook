@@ -9,6 +9,7 @@ export async function navigationCapabilities(actor: SessionActor): Promise<Navig
   const managesClub = roles.has("CLUB_DIRECTOR") || roles.has("INSTRUCTOR");
   return [
     { href: "/dashboard", label: "Inicio", visible: true },
+    { href: "/operaciones-no-disponibles", label: "Ayuda", visible: true },
     { href: "/classes", label: "Clases", visible: managesClub },
     { href: "/enrollments", label: "Inscripciones", visible: roles.has("CLUB_DIRECTOR") },
     { href: "/reviews", label: "Revisiones", visible: managesClub },
