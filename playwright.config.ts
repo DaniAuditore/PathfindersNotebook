@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: ["**/*.spec.ts", "**/ui-journeys.test.ts", "**/operational-ui-authorization.test.ts"],
+  // Auth fixtures mutate one disposable local database. Keep all browser
+  // projects serial so each role sees deterministic state.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   use: {
