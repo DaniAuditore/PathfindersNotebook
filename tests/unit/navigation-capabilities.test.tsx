@@ -16,7 +16,21 @@ describe("capacidad de navegación", () => {
     const links = await navigationCapabilities({ id: "instructor" });
     expect(links.find((link) => link.href === "/reviews")?.visible).toBe(true);
     expect(links.find((link) => link.href === "/enrollments")?.visible).toBe(false);
+    expect(links.find((link) => link.href === "/students")?.visible).toBe(true);
+    expect(links.find((link) => link.href === "/club")?.visible).toBe(false);
+    expect(links.find((link) => link.href === "/assessments")?.visible).toBe(true);
     expect(links).toEqual(expect.arrayContaining([{ href: "/dashboard", label: "Inicio", visible: true }]));
+  });
+
+  it("muestra perfil para toda sesión y reserva club para dirección activa", async () => {
+    const is = vi.fn().mockResolvedValue({ data: [{ role: "CLUB_DIRECTOR" }] });
+    const eq = vi.fn(() => ({ is }));
+    createSupabaseServerClient.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq })) })) });
+
+    const links = await navigationCapabilities({ id: "director" });
+    expect(links.find((link) => link.href === "/profile")?.visible).toBe(true);
+    expect(links.find((link) => link.href === "/club")?.visible).toBe(true);
+    expect(links.find((link) => link.href === "/audit")?.visible).toBe(true);
   });
 
   it("uses a keyboard-operable mobile menu and keeps role-hidden destinations absent", () => {

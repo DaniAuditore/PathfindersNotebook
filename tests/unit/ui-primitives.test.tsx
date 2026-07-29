@@ -15,6 +15,7 @@ import { SubmitButton } from "@/shared/ui/submit-button";
 import { ActionResult } from "@/shared/ui/action-result";
 import { DataSummary } from "@/shared/ui/data-summary";
 import { DeferredState } from "@/shared/ui/deferred-state";
+import { AuditTimeline } from "@/shared/ui/audit-timeline";
 
 describe("primitivas de interfaz", () => {
   it("renderiza jerarquía semántica, estados y controles con nombres en español", () => {
@@ -25,6 +26,14 @@ describe("primitivas de interfaz", () => {
     expect(html).toContain("Resumen de progreso");
     expect(html).toContain("Guardar");
     expect(html).toContain("No hay resultados");
+  });
+
+  it("limita la línea de auditoría a su proyección redactada", () => {
+    const html = renderToStaticMarkup(<AuditTimeline entries={[{ id: "audit-opaque", action: "protected_mutation.update", entityType: "students", occurredAt: "2026-07-28T12:00:00Z", actorLabel: "Usuario autorizado" }]} />);
+    expect(html).toContain("protected_mutation.update");
+    expect(html).toContain("Usuario autorizado");
+    expect(html).not.toContain("audit-opaque");
+    expect(html).not.toContain("metadata");
   });
 
   it("prevents repeated protected-form submission while the action is pending", () => {

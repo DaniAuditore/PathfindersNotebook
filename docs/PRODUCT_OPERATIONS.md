@@ -15,6 +15,11 @@ vuelven a autorizar el recurso y llaman al RPC indicado.
 | `/enrollments` | Alumnos RLS-visibles de clubes de dirección y catálogo Amigo publicado | `enroll_official_amigo_student(target_student_id, target_school_year)` | El resultado idempotente indica si ya existía una inscripción. |
 | `/students/[studentId]` | Alumno, inscripción, requisitos, intentos y revisiones RLS-visibles | `submit_progress_attempt` por la acción existente | No se ofrece texto para requisitos derivados, prácticos o de evidencia. |
 | `/reviews` | Intentos enviados de clubes dirigidos o instruidos | `review_progress_attempt(target_progress_id, target_attempt_id, decision_input, reason_input)` | Los cambios solicitados requieren motivo; no se muestran filas fuera del alcance. |
+| `/profile` | Sólo el nombre visible del actor | `update_own_profile(display_name_input)` | No muestra roles ni perfiles ajenos. |
+| `/students` | Nombre y año de nacimiento de alumnos de clubes dirigidos o instruidos | `create_or_update_student(target_student_id, target_club_id, display_name_input, birth_year_input, null, null)` | Sin identificadores visibles, vínculos de cuentas ni tutela. |
+| `/club` | Nombre de clubes donde el actor es director | `update_club(target_club_id, name_input)` | Sólo dirección activa; no crea clubes. |
+| `/audit` | Acción, tipo de entidad, momento y etiqueta de actor reducida; 25 por página | Ninguna | Nunca muestra metadatos, IDs, perfiles, correo ni cargas. |
+| `/assessments` | Inscripciones RLS-visibles de clubes dirigidos o instruidos, progreso agregado y estado actual | `record_assessment`, `record_investiture` | El evaluador asignado no se expone hasta contar con una lectura aprobada; el RPC verifica alcance y precondiciones. |
 
 ## Operaciones aplazadas
 
@@ -24,13 +29,20 @@ unidades, consejeros, notificaciones, exportaciones, recuperación de cuenta,
 se explican en `/operaciones-no-disponibles`; no se muestran controles desactivados
 ni rutas que simulen disponibilidad.
 
-## Pantallas privilegiadas bloqueadas
+## Pantallas privilegiadas
 
-`/club`, `/students`, `/audit` y `/assessments` permanecen sin publicar hasta
-que un DBA ejecute y registre de forma redactada los controles de propiedad,
-ACL y `SECURITY DEFINER` de los comandos 024/025 descritos en
-`SECURITY_ROLE_ALIGNMENT_RUNBOOK.md`. Un resultado pendiente o fallido no se
-compensa con navegación oculta ni autorizaciones del cliente.
+La evidencia redactada del control efectivo de propiedad, ACL y `SECURITY
+DEFINER` de los comandos 024/025 está aprobada para las pantallas `/club`,
+`/students`, `/audit` y `/assessments`: los 18 RPC pertenecen al propietario de
+comandos, `anon` no puede ejecutarlos y ningún rol de aplicación puede asumir
+ese propietario. La navegación sólo orienta; cada ruta, lectura y acción vuelve
+a comprobar sesión, alcance canónico y RLS. `SYSTEM_ADMIN` no recibe por ello
+acceso implícito a evidencia.
+
+No se ofrece gestión de roles: aunque existen comandos de asignación y
+revocación, el contrato no autoriza un directorio seguro ni una selección de
+destinatario sin UUID. No se piden UUID libres ni se muestran asignaciones de
+otras personas.
 
 ## PWA y soporte
 
