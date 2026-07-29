@@ -45,11 +45,13 @@ npm run test:migrations
 ```
 
 `npm run test:migrations` starts local Supabase, resets without a seed from zero
-through current migration `020`, runs authenticated pgTAP plus local Auth and
-Storage API tests, and stops with `--no-backup`. It needs no Supabase login,
-linked project, hosted credentials, manual fixture IDs, or real data. Run
-`npm test` afterward for complementary static/domain coverage; it does not
-replace executable migration validation.
+through the complete tracked migration chain (currently `001`–`032`), runs
+authenticated pgTAP plus local Auth and Storage API tests, and stops with
+`--no-backup`. The gate calls `supabase db reset --local --no-seed`, so the
+endpoint is discovered from `supabase/migrations` rather than hard-coded. It
+needs no Supabase login, linked project, hosted credentials, manual fixture
+IDs, or real data. Run `npm test` afterward for complementary static/domain
+coverage; it does not replace executable migration validation.
 
 ### Local status, logs, and cleanup
 
@@ -165,21 +167,49 @@ Migrations are append-only and must be applied in this exact order:
     payload fingerprint, validates persisted structure, and keeps audit work
     transactional.
 20. `020_guard_text_submission_modes.sql` — rejects direct text submission for
-    derived and practical requirements at the authenticated RPC boundary.
+     derived and practical requirements at the authenticated RPC boundary.
+21. `021_enroll_official_amigo_student.sql` — adds the transactional,
+    idempotent official-Amigo enrollment command.
+22. `022_lock_down_direct_enrollment_writes.sql` — removes direct enrollment
+    writes and pins controlled enrollment/progress commands.
+23. `023_canonical_role_assignments.sql` — introduces time-bounded canonical
+    role assignments and scoped authorization helpers.
+24. `024_command_authorized_catalog_identity_writes.sql` — adds scoped
+    profile, club, student, role, and catalog command boundaries.
+25. `025_command_authorized_progress_assessment_writes.sql` — pins protected
+    progress, assessment, evidence, and enrollment commands.
+26. `026_platform_bootstrap_club_director.sql` — adds the service-role-only
+    initial club-director bootstrap command.
+27. `027_close_direct_domain_dml.sql` — revokes browser domain-table DML and
+    removes permissive write policies after command boundaries exist.
+28. `028_atomic_evidence_command_audit.sql` — keeps authorized evidence
+    download auditing inside the command transaction.
+29. `029_least_privilege_command_owner.sql` — introduces the non-login,
+    object-limited command owner.
+30. `030_remediate_scoped_command_owner.sql` — captures the request actor and
+    completes scoped command-owner remediation.
+31. `031_close_residual_privileged_ui_dml.sql` — closes remaining browser DML
+    for organizations, units, and evidence-upload rate limits.
+32. `032_grant_rls_reader_select_privileges.sql` — restores authenticated
+    reader `SELECT` privileges without restoring table DML.
 
-The known disposable staging state is **only `001`–`007` applied**. Migrations
-`008`–`020` are local-only and are blocked from staging until MG10 passes after
-MG8 and MG9. Never edit an applied migration to make a correction.
+The tracked and reconciled linked-staging history is `001`–`032`. Never edit an
+applied migration to make a correction; append a forward-only remediation.
 
-The release sequence is:
+The canonical release sequence is:
 
-1. Pass the clean-checkout local gate through `020` and complementary checks.
-2. Make `migration-gate` required and capture active ruleset evidence (MG8).
-3. Merge these operational docs (MG9).
-4. Record successful clean-checkout local and protected-PR acceptance (MG10).
-5. Only then may an authorized operator confirm staging history, dry-run and
-   apply exactly `008`–`020` forward-only, and confirm history through `020`.
-6. Run and record the hosted RLS/RPC, browser, scanner, private Storage, and
+1. From a clean checkout, pass `npm run test:migrations` and the complementary
+   checks. The reset must apply the whole current local chain, not a selected
+   migration range.
+2. Require and record a successful protected-PR `migration-gate` check; capture
+   active branch-protection/ruleset evidence separately from the workflow file.
+3. An authorized operator confirms the linked staging history and runs the
+   linked dry-run. It must list exactly the pending forward-only suffix—never a
+   manually chosen historical range.
+4. Apply that suffix only after the dry-run matches the linked history, then
+   rerun `migration list --linked` and confirm it equals the tracked chain
+   (currently `001`–`032`).
+5. Run and record the hosted RLS/RPC, browser, scanner, private Storage, and
    signed-URL checks below. Any failure blocks release and requires a new
    forward-only remediation.
 
@@ -195,10 +225,29 @@ node node_modules/supabase/dist/supabase.js db push --linked
 node node_modules/supabase/dist/supabase.js migration list --linked
 ```
 
-Before the push, the linked history must show `001`–`007` and the dry-run must
-show exactly ordered migrations `008`–`020`, with no gaps or extras. Stop if it
-does not. Afterward, history must show `001`–`020`. Do not use `--include-all`
-to bypass history and do not run the empty `supabase/seed.sql` with real data.
+Before the push, record the linked history and verify the dry-run lists exactly
+the ordered migrations absent from it, with no gaps or extras. Stop if it does
+not. Afterward, linked history must equal the full tracked range (currently
+`001`–`032`). Do not use `--include-all` to bypass history and do not run the
+empty `supabase/seed.sql` with real data.
+
+### Current operational UI and security boundary
+
+The current operational UI uses server-rendered, RLS-scoped reads and
+server-action calls to authenticated RPCs; browser clients do not receive domain
+table `INSERT`, `UPDATE`, or `DELETE` privileges. Migrations `027` and `031`
+close those browser DML surfaces, while `032` grants only the reader `SELECT`
+privileges needed by existing RLS policies. The linked-staging command-owner
+audit covers the 18 protected commands: they are owned by the non-login
+`pathfinders_scoped_command_owner`, are not executable by `anon`, and are not
+assumable by application roles. This does not grant `SYSTEM_ADMIN` implicit
+evidence access.
+
+The UI deliberately does not provide file-evidence upload/download, role
+assignment management, account linking, regional/unit/counselor workflows,
+notifications, exports, recovery, or evaluator-assignment views. The staging
+checks for the already-existing backend evidence and authorization boundaries do
+not imply that those deferred product workflows are available in the UI.
 
 ## Staging fixtures and role matrix
 
@@ -282,10 +331,10 @@ approved operator interface:
 
 ## Browser workflow smoke checks
 
-The current application has no sign-in screen; establish the disposable
-Supabase Auth session through the approved staging authentication flow before
-opening protected routes. The checks below validate actual browser/session
-behavior, while the RPC matrix above validates the server-side workflows.
+Use the application's `/login` route and a disposable staging account to
+establish the Supabase Auth session before opening protected routes. The checks
+below validate actual browser/session behavior, while the RPC matrix above
+validates the server-side workflows.
 
 - [ ] An anonymous browser is rejected from `/dashboard` and protected student
   routes.
@@ -301,8 +350,8 @@ behavior, while the RPC matrix above validates the server-side workflows.
 ## Official Amigo staging acceptance (AC8 only)
 
 > **Authorized staging operation required — do not execute during local AC7
-> verification.** Complete this only after the full `001`–`020` staging
-> migration history and the preceding release gates pass.
+> verification.** Complete this only after the full current staging migration
+> history (currently `001`–`032`) and the preceding release gates pass.
 
 - [ ] An authorized Club A administrator provisions the canonical regular
   Amigo snapshot once; retrying returns the same published catalog/version and

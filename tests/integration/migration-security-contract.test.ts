@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const migration = (name: string) => readFileSync(resolve(process.cwd(), "supabase", "migrations", name), "utf8");
+const documentation = (name: string) => readFileSync(resolve(process.cwd(), name), "utf8");
 
 describe("Supabase migration security contracts", () => {
   it("preserves immutable published catalog versions and audit records", () => {
@@ -285,5 +286,20 @@ describe("Supabase migration security contracts", () => {
     expect(closure).not.toContain("create function public.create_organization");
     expect(closure).not.toContain("create function public.create_unit");
     expect(evidenceFacade).toContain('supabase.rpc("prepare_evidence_upload"');
+  });
+
+  it("keeps migration and staging documentation aligned with the current dynamic gate", () => {
+    const readme = documentation("README.md");
+    const staging = documentation("docs/STAGING_VALIDATION.md");
+    const gate = documentation("scripts/migration-gate.mjs");
+
+    expect(readme).toContain("currently `001`–`032`");
+    expect(staging).toContain("currently `001`–`032`");
+    expect(staging).toContain("032_grant_rls_reader_select_privileges.sql");
+    expect(staging).toContain("pathfinders_scoped_command_owner");
+    expect(staging).toContain("exactly the pending forward-only suffix");
+    expect(`${readme}\n${staging}`).not.toContain("through current migration `020`");
+    expect(staging).not.toContain("The current application has no sign-in screen");
+    expect(gate).toContain('await runSupabase(["db", "reset", "--local", "--no-seed"]);');
   });
 });

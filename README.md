@@ -25,28 +25,31 @@ The canonical credential-free command is:
 npm run test:migrations
 ```
 
-It starts a local stack, resets from zero through the current migration `020`,
-runs authenticated pgTAP and local Auth/Storage API checks, and stops the stack
-without retaining its database. `npm test` remains complementary fast coverage;
-it does not replace this gate. See
+It starts a local stack, resets from zero through every tracked migration
+(currently `001`–`032`), runs authenticated pgTAP and local Auth/Storage API
+checks, and stops the stack without retaining its database. The gate discovers
+the migration chain at reset time; do not replace the range above with a
+hard-coded endpoint. `npm test` remains complementary fast coverage; it does
+not replace this gate. See
 [the staging validation checklist](docs/STAGING_VALIDATION.md) for status/log
 troubleshooting, Windows `uv_spawn`, pinned-tool updates, CI enforcement, and
 the separate hosted release gate.
 
 ## Supabase deployment and safeguarding operations
 
-1. Staging currently has only migrations `001`–`007`. Migrations `008`–`020`
-   are forward-only and MUST NOT be applied to staging until MG10 records a
-   successful clean-checkout local gate and protected-PR CI run. The required
-   CI status name is exactly `migration-gate`; workflow YAML alone is not
-   branch-protection/ruleset evidence.
-2. After MG10, an authorized operator must apply pending migrations `008`
-   through `020` in filename order to disposable staging, then record the
-   hosted RLS/RPC, browser, scanner, private Storage, and signed-URL smoke
-   checks. Official Amigo provisioning and human browser acceptance are a
-   separate authorized staging gate; local commands do not perform them. Hosted
-   validation supplements the local/CI gate; neither substitutes
-   for the other. Follow
+1. The tracked migration chain is forward-only and currently spans
+   `001`–`032`; linked staging reconciliation records that same range as
+   applied. Before any future staging push, pass the clean-checkout local gate
+   and the required protected-PR CI status `migration-gate`; workflow YAML
+   alone is not branch-protection/ruleset evidence.
+2. An authorized operator must first compare linked history, then run a linked
+   dry-run and apply only the exact pending suffix in filename order. After the
+   push, linked history must match the full tracked chain. Record the hosted
+   RLS/RPC, browser, scanner, private Storage, and signed-URL smoke checks.
+   Official Amigo provisioning and human browser acceptance are separate
+   authorized staging gates; local commands do not perform them. Hosted
+   validation supplements the local/CI gate; neither substitutes for the other.
+   Follow
    [the staging validation checklist](docs/STAGING_VALIDATION.md) for the exact
    order and evidence requirements. Never edit an applied migration.
 3. Keep Supabase access tokens, database passwords, and service-role keys only
