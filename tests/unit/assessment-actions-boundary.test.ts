@@ -34,7 +34,7 @@ describe("límites de acciones de evaluación", () => {
 
     await recordAssessmentAction({ clubId: clubA, enrollmentId, decision: "passed", comments: "Correcto" });
 
-    expect(mocks.requireRole).toHaveBeenCalledWith(clubA, ["CLUB_DIRECTOR", "INSTRUCTOR"]);
+    expect(mocks.requireRole).not.toHaveBeenCalled();
     expect(client.rpc).toHaveBeenCalledWith("record_assessment", { target_enrollment_id: enrollmentId, decision_input: "passed", comments_input: "Correcto" });
   });
 

@@ -26,7 +26,7 @@ npm run test:migrations
 ```
 
 It starts a local stack, resets from zero through every tracked migration
-(currently `001`–`032`), runs authenticated pgTAP and local Auth/Storage API
+(currently `001`–`041`), runs authenticated pgTAP and local Auth/Storage API
 checks, and stops the stack without retaining its database. The gate discovers
 the migration chain at reset time; do not replace the range above with a
 hard-coded endpoint. `npm test` remains complementary fast coverage; it does
@@ -38,8 +38,12 @@ the separate hosted release gate.
 ## Supabase deployment and safeguarding operations
 
 1. The tracked migration chain is forward-only and currently spans
-   `001`–`032`; linked staging reconciliation records that same range as
-   applied. Before any future staging push, pass the clean-checkout local gate
+   `001`–`041`. The last recorded linked-staging baseline is `001`–`039`; if
+   an authorized operator confirms that baseline, its linked dry-run must list
+   exactly `040_credential_gate_request_actor.sql` then
+   `041_complete_initial_password_change_digest.sql`. Otherwise, derive the
+   pending suffix from the current linked history and stop on any mismatch.
+   Before any future staging push, pass the clean-checkout local gate
    and the required protected-PR CI status `migration-gate`; workflow YAML
    alone is not branch-protection/ruleset evidence.
 2. An authorized operator must first compare linked history, then run a linked

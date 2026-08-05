@@ -45,7 +45,7 @@ npm run test:migrations
 ```
 
 `npm run test:migrations` starts local Supabase, resets without a seed from zero
-through the complete tracked migration chain (currently `001`–`032`), runs
+through the complete tracked migration chain (currently `001`–`041`), runs
 authenticated pgTAP plus local Auth and Storage API tests, and stops with
 `--no-backup`. The gate calls `supabase db reset --local --no-seed`, so the
 endpoint is discovered from `supabase/migrations` rather than hard-coded. It
@@ -192,9 +192,32 @@ Migrations are append-only and must be applied in this exact order:
     for organizations, units, and evidence-upload rate limits.
 32. `032_grant_rls_reader_select_privileges.sql` — restores authenticated
     reader `SELECT` privileges without restoring table DML.
+33. `033_member_unit_v2.sql` — adds the v2 club-member, unit, timezone, and
+    scoped-reader foundation.
+34. `034_member_credential_commands.sql` — adds scoped membership and
+    credential commands without storing temporary passwords.
+35. `035_v2_backfill_cutover.sql` — reconciles provable legacy data before v2
+    readers become authoritative.
+36. `036_retire_legacy_authority.sql` — withdraws legacy guardian/evaluator
+    authority after reconciliation.
+37. `037_member_condition_transition_audit.sql` — records each club-local
+    Pathfinder-to-Leader transition once through command-owned evaluation.
+38. `038_v2_club_unit_reader_scope.sql` — grants v2-scoped club and unit reads
+    under RLS without restoring direct writes.
+39. `039_server_credential_resolver_access.sql` — grants credential resolution
+    only to the server-side service role.
+40. `040_credential_gate_request_actor.sql` — reads the credential-gate actor
+    through the hardened request-actor helper.
+41. `041_complete_initial_password_change_digest.sql` — qualifies the extension
+    digest and preserves Auth bindings across active credential states.
 
-The tracked and reconciled linked-staging history is `001`–`032`. Never edit an
-applied migration to make a correction; append a forward-only remediation.
+The tracked local chain is `001`–`041`. The last recorded linked-staging
+baseline is `001`–`039`; when an authorized operator confirms it, the linked
+dry-run must list exactly `040_credential_gate_request_actor.sql` followed by
+`041_complete_initial_password_change_digest.sql`. For any other confirmed
+linked history, use only its ordered pending suffix and stop on gaps or extras.
+Never edit an applied migration to make a correction; append a forward-only
+remediation.
 
 The canonical release sequence is:
 
@@ -208,7 +231,7 @@ The canonical release sequence is:
    manually chosen historical range.
 4. Apply that suffix only after the dry-run matches the linked history, then
    rerun `migration list --linked` and confirm it equals the tracked chain
-   (currently `001`–`032`).
+   (currently `001`–`041`).
 5. Run and record the hosted RLS/RPC, browser, scanner, private Storage, and
    signed-URL checks below. Any failure blocks release and requires a new
    forward-only remediation.
@@ -228,7 +251,7 @@ node node_modules/supabase/dist/supabase.js migration list --linked
 Before the push, record the linked history and verify the dry-run lists exactly
 the ordered migrations absent from it, with no gaps or extras. Stop if it does
 not. Afterward, linked history must equal the full tracked range (currently
-`001`–`032`). Do not use `--include-all` to bypass history and do not run the
+`001`–`041`). Do not use `--include-all` to bypass history and do not run the
 empty `supabase/seed.sql` with real data.
 
 ### Current operational UI and security boundary
@@ -351,7 +374,7 @@ validates the server-side workflows.
 
 > **Authorized staging operation required — do not execute during local AC7
 > verification.** Complete this only after the full current staging migration
-> history (currently `001`–`032`) and the preceding release gates pass.
+> history (currently `001`–`041`) and the preceding release gates pass.
 
 - [ ] An authorized Club A administrator provisions the canonical regular
   Amigo snapshot once; retrying returns the same published catalog/version and

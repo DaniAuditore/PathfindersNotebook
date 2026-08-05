@@ -21,5 +21,8 @@ export default defineConfig({
     command: "node tests/e2e/server.mjs",
     url: "http://127.0.0.1:3100/offline.html",
     reuseExistingServer: !process.env.CI,
+    // Local Supabase reset is part of authenticated-suite setup. Allow it to
+    // finish on slower Docker hosts rather than treating setup as a test.
+    timeout: 300_000,
   },
 });

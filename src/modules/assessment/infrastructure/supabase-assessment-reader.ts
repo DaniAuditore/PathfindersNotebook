@@ -2,17 +2,16 @@ import "server-only";
 
 import { calculateProgress, isReadyForAssessment, type ProgressRequirement, type ProgressRecord } from "@/modules/progress/domain/progress";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
+import { readV2ContentScope } from "@/shared/auth/v2-content-scope";
 import { canRecordInvestiture, type AssessmentRoleAssignment, type AssessmentWorkspaceItem } from "../application/assessment-read-model";
 
 export class SupabaseAssessmentReader {
   async workspace(actorId: string): Promise<AssessmentWorkspaceItem[] | null> {
     const supabase = await createSupabaseServerClient();
-    const { data: assignments, error: assignmentError } = await supabase.from("role_assignments").select("club_id, role").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
-    if (assignmentError) throw new Error("No fue posible cargar el alcance de evaluaciones.");
-    const clubIds = (assignments ?? []).flatMap((assignment) => assignment.club_id ? [assignment.club_id] : []);
-    const roleAssignments: AssessmentRoleAssignment[] = (assignments ?? []).flatMap((assignment) => assignment.club_id && (assignment.role === "CLUB_DIRECTOR" || assignment.role === "INSTRUCTOR") ? [{ clubId: assignment.club_id, role: assignment.role }] : []);
-    if (clubIds.length === 0) return null;
-    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id, club_id, student_id, catalog_id, catalog_version_id, school_year").in("club_id", clubIds).in("status", ["active", "completed"]).order("school_year", { ascending: false });
+    const scope = await readV2ContentScope(supabase, actorId);
+    if (!scope.canReview) return null;
+    const roleAssignments: AssessmentRoleAssignment[] = scope.directorClubIds.map((clubId) => ({ clubId, role: "CLUB_DIRECTOR" }));
+    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id, club_id, student_id, catalog_id, catalog_version_id, school_year").in("status", ["active", "completed"]).order("school_year", { ascending: false });
     if (enrollmentError) throw new Error("No fue posible cargar las inscripciones.");
     if (!enrollments?.length) return [];
     const enrollmentIds = enrollments.map((row) => row.id);

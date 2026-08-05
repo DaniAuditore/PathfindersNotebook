@@ -40,8 +40,7 @@ function queryClient(rows: Record<string, unknown>) {
 describe("progress server actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.requireSession.mockResolvedValue({ id: "guardian-a" });
-    mocks.requireRole.mockResolvedValue({ id: "instructor-a" });
+    mocks.requireSession.mockResolvedValue({ id: "instructor-a" });
   });
 
   it("pre-resolves render scope, submits once, and revalidates affected learner views", async () => {
@@ -53,7 +52,7 @@ describe("progress server actions", () => {
     mocks.submit.mockResolvedValue({ attemptId, enrollmentId: "enrollment-a" });
 
     await expect(submitProgressAction({ progressId, submissionText: "  completed  " })).resolves.toEqual({ attemptId, enrollmentId: "enrollment-a" });
-    expect(mocks.submit).toHaveBeenCalledWith({ progressId, submissionText: "completed", actorId: "guardian-a", evidenceIds: [] });
+    expect(mocks.submit).toHaveBeenCalledWith({ progressId, submissionText: "completed", actorId: "instructor-a", evidenceIds: [] });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard");
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/students/student-a");
   });
@@ -69,16 +68,15 @@ describe("progress server actions", () => {
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
-  it("denies a foreign-club review before invoking the mutation RPC", async () => {
+  it("delegates review scope to the v2 RPC after resolving an RLS-visible enrollment", async () => {
     mocks.createSupabaseServerClient.mockResolvedValue(queryClient({
       requirement_progress: { enrollment_id: "enrollment-b" },
       enrollments: { club_id: "club-b", student_id: "student-b" },
     }));
-    mocks.requireRole.mockRejectedValue(new Error("not authorized"));
+    mocks.review.mockResolvedValue({ enrollmentId: "enrollment-b" });
 
-    await expect(reviewProgressAction({ progressId, attemptId, decision: "accepted" })).rejects.toThrow("not authorized");
-    expect(mocks.requireRole).toHaveBeenCalledWith("club-b", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
-    expect(mocks.review).not.toHaveBeenCalled();
+    await expect(reviewProgressAction({ progressId, attemptId, decision: "accepted" })).resolves.toEqual({ enrollmentId: "enrollment-b" });
+    expect(mocks.review).toHaveBeenCalledWith(expect.objectContaining({ actorId: "instructor-a" }));
   });
 
   it("reviews through the derived club and revalidates queue and learner views", async () => {

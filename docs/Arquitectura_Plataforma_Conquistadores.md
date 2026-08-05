@@ -479,6 +479,18 @@ Responsabilidades:
 
 Aunque inicialmente exista un solo club, las entidades del negocio deberían incluir `club_id`. Esto no convierte automáticamente el producto en multiclub, pero evita rediseñar la base de datos en el futuro.
 
+### Membresía operativa v2
+
+La identidad operativa se modela con `club_members`, una asignación histórica de
+unidad activa por miembro y asignaciones históricas de personal. La condición
+**Conquistador/Líder** se calcula desde fecha de nacimiento completa y zona
+horaria IANA del club; nunca se asigna como rol. `INSTRUCTOR` puede trabajar en
+varias unidades; `COUNSELOR` en una sola, aunque una unidad puede tener varios
+consejeros. La dirección es única por club y su rotación atómica requiere a
+`SYSTEM_ADMIN`, motivo auditado y elimina las asignaciones de personal de la
+dirección saliente. La administración de sistema opera sólo metadatos de
+gobierno: no recibe tarjetas, avance, contenido sensible ni evidencias.
+
 ## 6.3. Catálogo de clases
 
 Responsabilidades:

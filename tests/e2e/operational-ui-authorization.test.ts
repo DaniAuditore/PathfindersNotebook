@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { installLocalAuthFixtures, localActors } from "./local-auth-fixtures";
 
-const protectedRoutes = ["/dashboard", "/classes", "/enrollments", "/reviews", "/operaciones-no-disponibles", "/profile", "/students", "/club", "/audit", "/assessments"] as const;
+const protectedRoutes = ["/dashboard", "/classes", "/enrollments", "/reviews", "/operaciones-no-disponibles", "/profile", "/students", "/club", "/members", "/audit", "/assessments"] as const;
 
 for (const route of protectedRoutes) {
   test(`no expone ${route} a una sesión anónima`, async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe("sesiones autenticadas locales y deterministas", () => {
 
   async function signIn(page: import("@playwright/test").Page, actor: keyof typeof localActors) {
     await page.goto("/login");
-    await page.getByLabel("Correo electrónico").fill(localActors[actor].email);
+    await page.getByLabel("Nombre de usuario").fill(localActors[actor].email);
     await page.getByLabel("Contraseña").fill(localActors[actor].password);
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);

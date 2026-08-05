@@ -148,6 +148,39 @@ async function expectDownloadDenied(client: SupabaseClient, objectPath: string) 
   expect(error).not.toBeNull();
 }
 
+function installV2CardOwnerFixture(clubId: string, studentRecordId: string, studentUserId: string, directorUserId: string) {
+  const unitId = randomUUID();
+  const memberId = randomUUID();
+  const directorMemberId = randomUUID();
+  const sql = `
+    begin;
+    insert into public.units (id, club_id, name) values ('${unitId}', '${clubId}', 'MG5 v2 unit');
+    insert into public.club_members (id, club_id, user_id, full_name, date_of_birth, lifecycle)
+      values
+        ('${memberId}', '${clubId}', '${studentUserId}', 'MG5 Student', '2010-01-01', 'ACTIVE'),
+        ('${directorMemberId}', '${clubId}', '${directorUserId}', 'MG5 Director', '1980-01-01', 'ACTIVE');
+    insert into public.member_unit_assignments (member_id, unit_id) values ('${memberId}', '${unitId}');
+    insert into public.club_director_assignments (club_id, member_id) values ('${clubId}', '${directorMemberId}');
+    insert into public.member_legacy_student_links (legacy_student_id, member_id, club_id)
+      values ('${studentRecordId}', '${memberId}', '${clubId}');
+    insert into public.member_legacy_reconciliation_ledger (legacy_student_id, club_id, member_id, outcome, reason, snapshot, reconciled_at)
+      values ('${studentRecordId}', '${clubId}', '${memberId}', 'RECONCILED', 'local Auth fixture', '{}'::jsonb, now());
+    insert into public.v2_cutover_control (singleton, state, reconciled_at, note)
+      values (true, 'ENABLED', now(), 'local Auth fixture')
+      on conflict (singleton) do update set state = excluded.state, reconciled_at = excluded.reconciled_at, note = excluded.note;
+    commit;`;
+  const containers = execFileSync("docker", ["ps", "-q", "--filter", "label=com.supabase.cli.project=pathfindersnotebook"], { encoding: "utf8" }).trim().split(/\s+/).filter(Boolean);
+  for (const container of containers) {
+    try {
+      execFileSync("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], { input: sql, stdio: ["pipe", "ignore", "ignore"] });
+      return;
+    } catch {
+      // Only the local Postgres container exposes psql.
+    }
+  }
+  throw new Error("The local Supabase Postgres container was not available for v2 fixtures.");
+}
+
 describeLocalSupabase("local Supabase Auth and private evidence Storage", () => {
   let environment: LocalSupabaseEnvironment;
   let serviceClient: SupabaseClient;
@@ -283,11 +316,13 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       });
     failOnApiError("Unable to create enrollment fixture", enrollmentError);
 
+    installV2CardOwnerFixture(clubId, studentRecordId, student.id, admin.id);
+
     guardianClient = await signInFixture(environment, guardian);
     studentClient = await signInFixture(environment, student);
     foreignClient = await signInFixture(environment, foreign);
 
-    const { data: progress, error: progressError } = await guardianClient
+    const { data: progress, error: progressError } = await studentClient
       .from("requirement_progress")
       .select("id")
       .eq("enrollment_id", enrollmentId)
@@ -304,11 +339,11 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       guardian,
       student,
       foreign,
-      clean: await prepareEvidence(guardianClient, progress.id),
-      pending: await prepareEvidence(guardianClient, progress.id),
+      clean: await prepareEvidence(studentClient, progress.id),
+      pending: await prepareEvidence(studentClient, progress.id),
       quarantined: await prepareEvidence(studentClient, progress.id),
-      invalidMime: await prepareEvidence(guardianClient, progress.id),
-      oversized: await prepareEvidence(guardianClient, progress.id),
+      invalidMime: await prepareEvidence(studentClient, progress.id),
+      oversized: await prepareEvidence(studentClient, progress.id),
     };
     adminClient = await signInFixture(environment, admin);
   }, LOCAL_TEST_TIMEOUT_MS);
@@ -579,8 +614,8 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     expect(foreignUpload.error).not.toBeNull();
 
     for (const [client, prepared] of [
-      [guardianClient, fixtures.clean],
-      [guardianClient, fixtures.pending],
+      [studentClient, fixtures.clean],
+      [studentClient, fixtures.pending],
       [studentClient, fixtures.quarantined],
     ] as const) {
       const { data, error } = await client.storage
@@ -592,7 +627,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     }
 
     const arbitraryPath = `${fixtures.clubId}/${randomUUID()}`;
-    const arbitraryUpload = await guardianClient.storage
+    const arbitraryUpload = await studentClient.storage
       .from("evidence")
       .upload(arbitraryPath, EVIDENCE_BYTES, { contentType: "application/pdf" });
     expect(arbitraryUpload.data).toBeNull();
@@ -600,7 +635,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
   }, LOCAL_TEST_TIMEOUT_MS);
 
   it("enforces the private bucket MIME and byte-size limits", async () => {
-    const invalidMimeUpload = await guardianClient.storage
+    const invalidMimeUpload = await studentClient.storage
       .from("evidence")
       .upload(fixtures.invalidMime.objectPath, new TextEncoder().encode("not evidence"), {
         contentType: "text/plain",
@@ -608,7 +643,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     expect(invalidMimeUpload.data).toBeNull();
     expect(invalidMimeUpload.error).not.toBeNull();
 
-    const oversizedUpload = await guardianClient.storage
+    const oversizedUpload = await studentClient.storage
       .from("evidence")
       .upload(fixtures.oversized.objectPath, new Uint8Array(MAX_EVIDENCE_BYTES + 1), {
         contentType: "application/pdf",
@@ -618,13 +653,13 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
   }, LOCAL_TEST_TIMEOUT_MS);
 
   it("keeps scan state privileged and exposes only clean evidence to authorized users", async () => {
-    const unauthorizedScanUpdate = await guardianClient
+    const unauthorizedScanUpdate = await studentClient
       .from("evidence")
       .update({ scan_status: "clean" })
       .eq("id", fixtures.clean.evidenceId);
     expect(unauthorizedScanUpdate.error).not.toBeNull();
 
-    await expectDownloadDenied(guardianClient, fixtures.pending.objectPath);
+    await expectDownloadDenied(studentClient, fixtures.pending.objectPath);
 
     const { error: cleanError } = await serviceClient
       .from("evidence")
@@ -638,7 +673,7 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
       .eq("id", fixtures.quarantined.evidenceId);
     failOnApiError("Unable to mark the quarantined scan fixture", quarantineError);
 
-    for (const client of [guardianClient, studentClient]) {
+    for (const client of [studentClient]) {
       const { data, error } = await client.storage.from("evidence").download(fixtures.clean.objectPath);
       expect(error).toBeNull();
       expect(data).not.toBeNull();
@@ -648,6 +683,6 @@ describeLocalSupabase("local Supabase Auth and private evidence Storage", () => 
     await expectDownloadDenied(studentClient, fixtures.quarantined.objectPath);
     await expectDownloadDenied(foreignClient, fixtures.clean.objectPath);
     await expectDownloadDenied(anonymousClient, fixtures.clean.objectPath);
-    await expectDownloadDenied(guardianClient, `${fixtures.clubId}/${randomUUID()}`);
+    await expectDownloadDenied(studentClient, `${fixtures.clubId}/${randomUUID()}`);
   }, LOCAL_TEST_TIMEOUT_MS);
 });

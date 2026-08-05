@@ -32,8 +32,9 @@ function parseEnvironment(output) {
   }
   const url = values.get("API_URL");
   const key = values.get("ANON_KEY");
-  if (!url || !key || !/^https?:\/\/(127\.0\.0\.1|localhost)(?::\d+)?$/i.test(url)) throw new Error("E2E requires a local Supabase API URL and anon key.");
-  return { url, key };
+  const secret = values.get("SECRET_KEY") ?? values.get("SERVICE_ROLE_KEY");
+  if (!url || !key || !secret || !/^https?:\/\/(127\.0\.0\.1|localhost)(?::\d+)?$/i.test(url)) throw new Error("E2E requires a local Supabase API, publishable key, and server-only Auth key.");
+  return { url, key, secret };
 }
 
 async function startUpstream() {
@@ -42,11 +43,11 @@ async function startUpstream() {
   await runLocalSupabase(["start"]);
   localStackStarted = true;
   await runLocalSupabase(["db", "reset", "--local", "--no-seed"]);
-  const { url, key } = parseEnvironment(await runLocalSupabase(["status", "-o", "env"]));
+  const { url, key, secret } = parseEnvironment(await runLocalSupabase(["status", "-o", "env"]));
   const command = `npm run dev -- --hostname 127.0.0.1 --port ${nextPort}`;
   next = process.platform === "win32"
-    ? spawn(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", command], { cwd: root, env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key }, stdio: "inherit" })
-    : spawn("npm", ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", String(nextPort)], { cwd: root, env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key }, stdio: "inherit" });
+    ? spawn(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", command], { cwd: root, env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key, SUPABASE_AUTH_ADMIN_KEY: secret }, stdio: "inherit" })
+    : spawn("npm", ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", String(nextPort)], { cwd: root, env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key, SUPABASE_AUTH_ADMIN_KEY: secret }, stdio: "inherit" });
 }
 
 const server = createServer(async (incoming, outgoing) => {

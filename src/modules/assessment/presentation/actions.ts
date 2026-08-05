@@ -4,7 +4,6 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireRole } from "@/shared/auth/session";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
 const assessmentSchema = z.object({ clubId: z.uuid(), enrollmentId: z.uuid(), decision: z.enum(["passed", "failed"]), comments: z.string().max(4_000).default("") });
@@ -15,7 +14,8 @@ export async function recordAssessmentAction(input: unknown) {
   const supabase = await createSupabaseServerClient();
   const { data: enrollment, error: enrollmentError } = await supabase.from("enrollments").select("club_id").eq("id", command.enrollmentId).maybeSingle();
   if (enrollmentError || !enrollment || enrollment.club_id !== command.clubId) throw new Error("La inscripción no está disponible en este club.");
-  await requireRole(enrollment.club_id, ["CLUB_DIRECTOR", "INSTRUCTOR"]);
+  // The v2 RPC resolves director/staff unit scope from active membership; do not
+  // reintroduce legacy role_assignments as an application-side authority.
   const { error } = await supabase.rpc("record_assessment", { target_enrollment_id: command.enrollmentId, decision_input: command.decision, comments_input: command.comments });
   if (error) throw new Error("Unable to record this assessment.");
 }
@@ -25,7 +25,7 @@ export async function recordInvestitureAction(input: unknown) {
   const supabase = await createSupabaseServerClient();
   const { data: enrollment, error: enrollmentError } = await supabase.from("enrollments").select("club_id").eq("id", command.enrollmentId).maybeSingle();
   if (enrollmentError || !enrollment || enrollment.club_id !== command.clubId) throw new Error("La inscripción no está disponible en este club.");
-  await requireRole(enrollment.club_id, ["CLUB_DIRECTOR"]);
+  // The v2 RPC is the sole authority for the active director check.
   const { error } = await supabase.rpc("record_investiture", { target_enrollment_id: command.enrollmentId, rationale_input: command.rationale });
   if (error) throw new Error("Investiture requires complete progress and a passing assessment.");
 }

@@ -9,7 +9,7 @@ export class AuthorizationError extends Error {
   }
 }
 
-export type CanonicalRole = "SYSTEM_ADMIN" | "CLUB_DIRECTOR" | "INSTRUCTOR" | "COUNSELOR" | "PATHFINDER" | "GUARDIAN" | "EVALUATOR";
+export type CanonicalRole = "SYSTEM_ADMIN" | "CLUB_DIRECTOR" | "INSTRUCTOR" | "COUNSELOR";
 
 export interface SessionActor {
   id: string;

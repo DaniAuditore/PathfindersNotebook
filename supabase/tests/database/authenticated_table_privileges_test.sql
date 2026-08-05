@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(50);
+select plan(62);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -62,9 +62,9 @@ select ok(
 -- Every browser-write surface closed by 027 has no authenticated or anonymous
 -- DML privilege.  Function commands, not RLS write policies, are the boundary.
 select ok(not has_table_privilege('authenticated', format('public.%I', table_name), 'INSERT, UPDATE, DELETE'), 'authenticated has no direct DML on ' || table_name)
-from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log']) as table_name;
+  from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log','club_members','club_director_assignments','member_unit_assignments','staff_unit_assignments','member_condition_audit','member_credentials']) as table_name;
 select ok(not has_table_privilege('anon', format('public.%I', table_name), 'INSERT, UPDATE, DELETE'), 'anon has no direct DML on ' || table_name)
-from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log']) as table_name;
+  from unnest(array['catalogs','catalog_versions','catalog_sections','requirements','profiles','clubs','memberships','students','role_assignments','enrollments','requirement_progress','progress_attempts','progress_reviews','assessments','investitures','evidence','attempt_evidence','audit_log','club_members','club_director_assignments','member_unit_assignments','staff_unit_assignments','member_condition_audit','member_credentials']) as table_name;
 
 select ok(
   not has_table_privilege('authenticated', 'public.enrollments', 'INSERT'),

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSupabaseServerClient } from "@/shared/supabase/server";
+import { readV2ContentScope } from "@/shared/auth/v2-content-scope";
 import type { AuditTimelinePage } from "../application/audit-read-model";
 
 const pageSize = 25;
@@ -23,9 +24,7 @@ function encodeAuditCursor(cursor: AuditCursor): string {
 export class SupabaseAuditReader {
   async timeline(actorId: string, cursor: AuditCursor | null): Promise<AuditTimelinePage | null> {
     const supabase = await createSupabaseServerClient();
-    const { data: assignments, error: assignmentError } = await supabase.from("role_assignments").select("club_id").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
-    if (assignmentError) throw new Error("No fue posible cargar el alcance de auditoría.");
-    const clubIds = (assignments ?? []).flatMap((assignment) => assignment.club_id ? [assignment.club_id] : []);
+    const { directorClubIds: clubIds } = await readV2ContentScope(supabase, actorId);
     if (clubIds.length === 0) return null;
 
     let query = supabase.from("audit_log").select("id, action, entity_type, actor_id, created_at").in("club_id", clubIds).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
