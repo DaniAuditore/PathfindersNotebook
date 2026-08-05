@@ -17,6 +17,7 @@ begin
     when 'organization_a' then return '10000000-0000-0000-0000-000000000003';
     when 'unit_a' then return '10000000-0000-0000-0000-000000000004';
     when 'unit_b' then return '10000000-0000-0000-0000-000000000005';
+    when 'unit_a_secondary' then return '10000000-0000-0000-0000-000000000006';
     when 'admin_a' then return '20000000-0000-0000-0000-000000000001';
     when 'instructor_a' then return '20000000-0000-0000-0000-000000000002';
     when 'guardian_a' then return '20000000-0000-0000-0000-000000000003';
@@ -26,6 +27,7 @@ begin
     when 'system_admin_a' then return '20000000-0000-0000-0000-000000000007';
     when 'counselor_a' then return '20000000-0000-0000-0000-000000000008';
     when 'evaluator_a' then return '20000000-0000-0000-0000-000000000009';
+    when 'counselor_b' then return '20000000-0000-0000-0000-000000000010';
     when 'student_a' then return '30000000-0000-0000-0000-000000000001';
     when 'student_b' then return '30000000-0000-0000-0000-000000000002';
     when 'catalog_a' then return '40000000-0000-0000-0000-000000000001';
@@ -37,6 +39,14 @@ begin
     when 'enrollment_a' then return '70000000-0000-0000-0000-000000000001';
     when 'enrollment_b' then return '70000000-0000-0000-0000-000000000002';
     when 'assessment_b' then return '80000000-0000-0000-0000-000000000002';
+    when 'member_pathfinder' then return '90000000-0000-0000-0000-000000000001';
+    when 'member_leader' then return '90000000-0000-0000-0000-000000000002';
+    when 'counselor_a_member' then return '90000000-0000-0000-0000-000000000003';
+    when 'counselor_b_member' then return '90000000-0000-0000-0000-000000000004';
+    when 'instructor_a_member' then return '90000000-0000-0000-0000-000000000005';
+    when 'member_pending' then return '90000000-0000-0000-0000-000000000006';
+    when 'member_withdrawn' then return '90000000-0000-0000-0000-000000000007';
+    when 'member_young' then return '90000000-0000-0000-0000-000000000008';
     else raise exception 'unknown test fixture: %', fixture_name;
   end case;
 end;
@@ -67,6 +77,15 @@ begin
   -- independent when pg_prove executes files in separate sessions.
   truncate table
     public.audit_log,
+    public.member_credentials,
+    public.member_legacy_reconciliation_ledger,
+    public.member_legacy_student_links,
+    public.v2_cutover_control,
+    public.member_condition_audit,
+    public.club_director_assignments,
+    public.staff_unit_assignments,
+    public.member_unit_assignments,
+    public.club_members,
     public.attempt_evidence,
     public.evidence,
     public.evidence_upload_rate_limits,
@@ -102,6 +121,7 @@ begin
     (test_fixtures.id('system_admin_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-system-admin@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
     (test_fixtures.id('counselor_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-counselor-a@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
     (test_fixtures.id('evaluator_a'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-evaluator-a@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
+    ,(test_fixtures.id('counselor_b'), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'fixture-counselor-b@example.test', '', now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
   on conflict (id) do update set email = excluded.email, updated_at = excluded.updated_at;
 
   insert into public.profiles (user_id, display_name) values
@@ -113,15 +133,17 @@ begin
     (test_fixtures.id('student_b_user'), 'Fixture Student B'),
     (test_fixtures.id('system_admin_a'), 'Fixture System Admin'),
     (test_fixtures.id('counselor_a'), 'Fixture Counselor A'),
-    (test_fixtures.id('evaluator_a'), 'Fixture Evaluator A');
+    (test_fixtures.id('evaluator_a'), 'Fixture Evaluator A'),
+    (test_fixtures.id('counselor_b'), 'Fixture Counselor B');
 
-  insert into public.clubs (id, name) values
-    (test_fixtures.id('club_a'), 'Fixture Club A'),
-    (test_fixtures.id('club_b'), 'Fixture Club B');
+  insert into public.clubs (id, name, timezone) values
+    (test_fixtures.id('club_a'), 'Fixture Club A', 'America/Argentina/Buenos_Aires'),
+    (test_fixtures.id('club_b'), 'Fixture Club B', 'Etc/UTC');
   insert into public.organizations (id, name) values (test_fixtures.id('organization_a'), 'Fixture Organization A');
   insert into public.units (id, club_id, name) values
     (test_fixtures.id('unit_a'), test_fixtures.id('club_a'), 'Fixture Unit A'),
-    (test_fixtures.id('unit_b'), test_fixtures.id('club_b'), 'Fixture Unit B');
+    (test_fixtures.id('unit_b'), test_fixtures.id('club_b'), 'Fixture Unit B'),
+    (test_fixtures.id('unit_a_secondary'), test_fixtures.id('club_a'), 'Fixture Unit A Secondary');
 
   insert into public.memberships (club_id, user_id, role) values
     (test_fixtures.id('club_a'), test_fixtures.id('admin_a'), 'admin'),
@@ -141,6 +163,34 @@ begin
     (test_fixtures.id('student_b_user'), 'PATHFINDER', test_fixtures.id('student_b'));
   insert into public.role_assignments (user_id, role, organization_id) values (test_fixtures.id('system_admin_a'), 'SYSTEM_ADMIN', test_fixtures.id('organization_a'));
   insert into public.role_assignments (user_id, role, unit_id) values (test_fixtures.id('counselor_a'), 'COUNSELOR', test_fixtures.id('unit_a'));
+
+  insert into public.club_members (id, club_id, user_id, full_name, date_of_birth, lifecycle, withdrawn_at) values
+    (test_fixtures.id('member_pathfinder'), test_fixtures.id('club_a'), test_fixtures.id('student_a_user'), 'Fixture Pathfinder', date '2010-08-04', 'ACTIVE', null),
+    (test_fixtures.id('member_leader'), test_fixtures.id('club_a'), test_fixtures.id('admin_a'), 'Fixture Leader', date '1980-01-01', 'ACTIVE', null),
+    (test_fixtures.id('counselor_a_member'), test_fixtures.id('club_a'), test_fixtures.id('counselor_a'), 'Fixture Counselor A', date '1980-01-01', 'ACTIVE', null),
+    (test_fixtures.id('counselor_b_member'), test_fixtures.id('club_a'), test_fixtures.id('counselor_b'), 'Fixture Counselor B', date '1980-01-01', 'ACTIVE', null),
+    (test_fixtures.id('instructor_a_member'), test_fixtures.id('club_a'), test_fixtures.id('instructor_a'), 'Fixture Instructor A', date '1980-01-01', 'ACTIVE', null),
+    (test_fixtures.id('member_pending'), test_fixtures.id('club_a'), null, 'Fixture Pending', date '2010-01-01', 'PENDING_REMEDIATION', null),
+    (test_fixtures.id('member_withdrawn'), test_fixtures.id('club_a'), null, 'Fixture Withdrawn', date '1980-01-01', 'WITHDRAWN', now()),
+    (test_fixtures.id('member_young'), test_fixtures.id('club_a'), null, 'Fixture Young', (current_date - interval '15 years')::date, 'ACTIVE', null);
+  insert into public.member_unit_assignments (member_id, unit_id) values
+    (test_fixtures.id('member_pathfinder'), test_fixtures.id('unit_a')),
+    (test_fixtures.id('member_leader'), test_fixtures.id('unit_a')),
+    (test_fixtures.id('counselor_a_member'), test_fixtures.id('unit_a')),
+    (test_fixtures.id('counselor_b_member'), test_fixtures.id('unit_a')),
+    (test_fixtures.id('instructor_a_member'), test_fixtures.id('unit_a'));
+  insert into public.club_director_assignments (club_id, member_id)
+  values (test_fixtures.id('club_a'), test_fixtures.id('member_leader'));
+   insert into public.staff_unit_assignments (member_id, unit_id, role) values
+    (test_fixtures.id('counselor_a_member'), test_fixtures.id('unit_a'), 'COUNSELOR'),
+     (test_fixtures.id('instructor_a_member'), test_fixtures.id('unit_a'), 'INSTRUCTOR');
+  insert into public.member_legacy_student_links (legacy_student_id, member_id, club_id)
+  values (test_fixtures.id('student_a'), test_fixtures.id('member_pathfinder'), test_fixtures.id('club_a'));
+  insert into public.member_legacy_reconciliation_ledger (legacy_student_id, club_id, member_id, outcome, reason, snapshot, reconciled_at)
+  values (test_fixtures.id('student_a'), test_fixtures.id('club_a'), test_fixtures.id('member_pathfinder'), 'RECONCILED', 'fixture v2 member and unit proven', '{}'::jsonb, now());
+  insert into public.v2_cutover_control (singleton, state, reconciled_at, note)
+  values (true, 'ENABLED', now(), 'fixture reconciliation')
+  on conflict (singleton) do update set state = excluded.state, reconciled_at = excluded.reconciled_at, note = excluded.note;
 
   insert into public.catalogs (id, club_id, class_type, title) values
     (test_fixtures.id('catalog_a'), test_fixtures.id('club_a'), 'regular', 'Fixture Regular A'),

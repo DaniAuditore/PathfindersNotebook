@@ -37,36 +37,41 @@ function clientWith(results: Record<string, Result[]>) {
 describe("Supabase progress read boundaries", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("derives reviewer capability and linked learners from the authenticated actor", async () => {
+  it("derives reviewer capability from active v2 assignments and reconciled links", async () => {
     const fake = clientWith({
-      role_assignments: [{ data: [{ club_id: "club-a", role: "INSTRUCTOR" }], error: null }],
-      students: [{ data: [], error: null }],
+      club_members: [{ data: [{ id: "member-a" }], error: null }],
+      club_director_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
+      staff_unit_assignments: [{ data: [], error: null }],
+      member_legacy_student_links: [{ data: [], error: null }],
       enrollments: [{ data: [], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseProgressReader().dashboard("actor-a")).resolves.toEqual({ learners: [], canReview: true, cohort: { enrolled: 0, submitted: 0, accepted: 0, rejected: 0, oldestPendingAt: null } });
-    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "actor-a"] });
-    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "in", args: ["role", ["CLUB_DIRECTOR", "INSTRUCTOR"]] });
-    expect(fake.calls).toContainEqual({ table: "students", method: "or", args: ["guardian_user_id.eq.actor-a,student_user_id.eq.actor-a"] });
+    expect(fake.calls).toContainEqual({ table: "club_members", method: "eq", args: ["user_id", "actor-a"] });
+    expect(fake.calls).toContainEqual({ table: "club_director_assignments", method: "in", args: ["member_id", ["member-a"]] });
+    expect(fake.calls).toContainEqual({ table: "member_legacy_student_links", method: "select", args: ["legacy_student_id"] });
   });
 
-  it("scopes the review queue from server-read memberships, never caller club input", async () => {
+  it("scopes the review queue from server-read v2 assignments, never caller club input", async () => {
     const fake = clientWith({
-      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
+      club_members: [{ data: [{ id: "member-a" }], error: null }],
+      club_director_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
+      staff_unit_assignments: [{ data: [], error: null }],
       enrollments: [{ data: [], error: null }],
     });
     createSupabaseServerClient.mockResolvedValue(fake.client);
 
     await expect(new SupabaseProgressReader().reviewQueue("reviewer-a")).resolves.toEqual([]);
-    expect(fake.calls).toContainEqual({ table: "role_assignments", method: "eq", args: ["user_id", "reviewer-a"] });
-    expect(fake.calls).toContainEqual({ table: "enrollments", method: "in", args: ["club_id", ["club-a"]] });
+    expect(fake.calls).toContainEqual({ table: "club_members", method: "eq", args: ["user_id", "reviewer-a"] });
     expect(fake.calls).toContainEqual({ table: "enrollments", method: "eq", args: ["status", "active"] });
   });
 
   it("projects a child attempt with its root context and queue age", async () => {
     const fake = clientWith({
-      role_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
+      club_members: [{ data: [{ id: "member-a" }], error: null }],
+      club_director_assignments: [{ data: [{ club_id: "club-a" }], error: null }],
+      staff_unit_assignments: [{ data: [], error: null }],
       enrollments: [{ data: [{ id: "enrollment-a", student_id: "student-a" }], error: null }],
       requirement_progress: [{ data: [{ id: "progress-a", enrollment_id: "enrollment-a", requirement_id: "child-a" }], error: null }],
       progress_attempts: [{ data: [{ id: "attempt-a", progress_id: "progress-a", submission_text: "Finished Genesis 1", submitted_at: "2026-07-27" }], error: null }],

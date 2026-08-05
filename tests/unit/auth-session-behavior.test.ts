@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   cookieStore: { get: vi.fn(), set: vi.fn() },
   cookies: vi.fn(),
   redirect: vi.fn((destination: string) => { throw new Error(`REDIRECT:${destination}`); }),
+  resolveInternalUsername: vi.fn(),
+  issueInitialPasswordChangeToken: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -15,8 +17,12 @@ vi.mock("@supabase/ssr", () => ({ createServerClient: mocks.createServerClient }
 vi.mock("@/shared/supabase/server", () => ({ createSupabaseServerClient: mocks.createSupabaseServerClient }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("next/headers", () => ({ cookies: mocks.cookies }));
+vi.mock("@/modules/identity/infrastructure/supabase-auth-admin", () => ({
+  resolveInternalUsername: mocks.resolveInternalUsername,
+  issueInitialPasswordChangeToken: mocks.issueInitialPasswordChangeToken,
+}));
 
-import { loginAction, signOutAction } from "@/app/(auth)/actions";
+import { changeInitialPasswordAction, loginAction, signOutAction } from "@/app/(auth)/actions";
 import LoginPage from "@/app/(auth)/login/page";
 import { proxy } from "@/proxy";
 
@@ -24,33 +30,24 @@ describe("authentication actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.cookies.mockResolvedValue(mocks.cookieStore);
+    mocks.resolveInternalUsername.mockResolvedValue({ authUserId: "member", alias: "m.11111111-1111-4111-8111-111111111111@members.invalid" });
   });
 
   it("signs in valid credentials and redirects to the dashboard", async () => {
     const signInWithPassword = vi.fn().mockResolvedValue({ error: null });
-    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signInWithPassword } });
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signInWithPassword }, rpc: vi.fn().mockResolvedValue({ data: "ALLOW" }) });
     const form = new FormData();
-    form.set("email", "learner@example.test");
+    form.set("identifier", "learner");
     form.set("password", "secret");
 
     await expect(loginAction(form)).rejects.toThrow("REDIRECT:/dashboard");
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "learner@example.test", password: "secret" });
-  });
-
-  it("preserves only the entered email in a short-lived HttpOnly cookie after failed login", async () => {
-    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signInWithPassword: vi.fn().mockResolvedValue({ error: new Error("invalid") }) } });
-    const form = new FormData();
-    form.set("email", "learner@example.test");
-    form.set("password", "wrong");
-
-    await expect(loginAction(form)).rejects.toThrow("REDIRECT:/login?error=login");
-    expect(mocks.cookieStore.set).toHaveBeenCalledWith("login_recovery_email", "learner@example.test", expect.objectContaining({ httpOnly: true, maxAge: 300, path: "/login", sameSite: "lax" }));
-    expect(mocks.cookieStore.set.mock.calls.flat().join(" ")).not.toContain("wrong");
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: expect.stringMatching(/@members\.invalid$/), password: "secret" });
   });
 
   it("does not place failed-login credentials in the redirect URL", async () => {
+    mocks.resolveInternalUsername.mockResolvedValue(null);
     const form = new FormData();
-    form.set("email", "not-an-email");
+    form.set("identifier", "no");
     form.set("password", "secret-value");
 
     await expect(loginAction(form)).rejects.toThrow("REDIRECT:/login?error=login");
@@ -77,26 +74,38 @@ describe("authentication actions", () => {
     expect(signOut).toHaveBeenCalledOnce();
     expect(mocks.redirect).not.toHaveBeenCalledWith("/login");
   });
+
+  it("completes the database credential gate only after Auth accepts the new password", async () => {
+    const updateUser = vi.fn().mockResolvedValue({ error: null });
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    mocks.cookieStore.get.mockReturnValue({ value: "opaque-change-token" });
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { updateUser }, rpc });
+    const form = new FormData();
+    form.set("password", "a-safe-initial-password");
+    form.set("passwordConfirmation", "a-safe-initial-password");
+
+    await expect(changeInitialPasswordAction(form)).rejects.toThrow("REDIRECT:/dashboard");
+    expect(updateUser).toHaveBeenCalledWith({ password: "a-safe-initial-password" });
+    expect(rpc).toHaveBeenCalledWith("complete_initial_password_change", { change_token: "opaque-change-token" });
+    expect(mocks.cookieStore.set).toHaveBeenCalledWith("initial_password_change_token", "", { maxAge: 0, path: "/change-password" });
+  });
 });
 
-describe("login recovery presentation", () => {
+describe("login presentation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.cookies.mockResolvedValue(mocks.cookieStore);
   });
 
-  it("restores the safe email, keeps the password blank, and focuses the generic error", async () => {
-    mocks.cookieStore.get.mockReturnValue({ value: "learner@example.test" });
-
+  it("keeps the password blank and focuses the generic error", async () => {
     const html = renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve({ error: "login" }) }));
 
-    expect(html).toContain('name="email"');
-    expect(html).toContain('value="learner@example.test"');
+    expect(html).toContain('name="identifier"');
     expect(html).toContain('name="password"');
     expect(html).not.toContain('name="password" value=');
     expect(html).toContain('role="alert"');
     expect(html).toContain('tabindex="-1"');
-    expect(html).toContain("No pudimos iniciar sesión.");
+    expect(html).toContain("No se pudo iniciar sesión.");
   });
 });
 
@@ -107,10 +116,10 @@ describe("session proxy", () => {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "publishable-test-key";
   });
 
-  function session(user: { id: string } | null) {
+  function session(user: { id: string; email?: string } | null, credentialGate = "ALLOW") {
     mocks.createServerClient.mockImplementation((_url, _key, options) => {
       options.cookies.setAll([{ name: "refreshed", value: "token", options: { httpOnly: true, path: "/" } }]);
-      return { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) } };
+      return { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, rpc: vi.fn().mockResolvedValue({ data: user ? credentialGate : null }) };
     });
   }
 
@@ -136,5 +145,25 @@ describe("session proxy", () => {
 
     expect(response.headers.get("location")).toBeNull();
     expect(response.cookies.get("refreshed")?.value).toBe("token");
+  });
+
+  it("sends a pending internal credential from member operations to password change", async () => {
+    session({ id: "member", email: "m.11111111-1111-4111-8111-111111111111@members.invalid" }, "CHANGE_PASSWORD");
+    const response = await proxy(new NextRequest("http://localhost/members"));
+
+    expect(response.headers.get("location")).toBe("http://localhost/change-password");
+    expect(response.cookies.get("refreshed")?.value).toBe("token");
+  });
+
+  it("leaves anonymous login and password-change paths available", async () => {
+    session(null);
+
+    const [login, passwordChange] = await Promise.all([
+      proxy(new NextRequest("http://localhost/login")),
+      proxy(new NextRequest("http://localhost/change-password")),
+    ]);
+
+    expect(login.headers.get("location")).toBeNull();
+    expect(passwordChange.headers.get("location")).toBeNull();
   });
 });

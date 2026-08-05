@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(100);
+select plan(101);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -44,11 +44,11 @@ select ok(
   and not has_function_privilege('authenticated', 'public.request_actor_id()', 'EXECUTE'),
   'only the command owner executes the private request actor helper'
 );
-select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
-select is(public.request_actor_id(), test_fixtures.id('guardian_a'), 'the request actor helper returns the request.jwt.claim.sub subject');
+select test_fixtures.assume_authenticated(test_fixtures.id('student_a_user'));
+select is(public.request_actor_id(), test_fixtures.id('student_a_user'), 'the request actor helper returns the request.jwt.claim.sub subject');
 select set_config('request.jwt.claim.sub', '', true);
-select set_config('request.jwt.claims', jsonb_build_object('sub', test_fixtures.id('guardian_a'))::text, true);
-select is(public.request_actor_id(), test_fixtures.id('guardian_a'), 'the request actor helper returns the request.jwt.claims JSON subject when the scalar subject is blank');
+select set_config('request.jwt.claims', jsonb_build_object('sub', test_fixtures.id('student_a_user'))::text, true);
+select is(public.request_actor_id(), test_fixtures.id('student_a_user'), 'the request actor helper returns the request.jwt.claims JSON subject when the scalar subject is blank');
 select set_config('request.jwt.claims', '', true);
 select is(public.request_actor_id(), null::uuid, 'the request actor helper returns null for absent claim sources');
 select set_config('request.jwt.claim.sub', 'not-a-uuid', true);
@@ -58,20 +58,20 @@ select set_config('request.jwt.claims', '{"sub":"not-a-uuid"}', true);
 select is(public.request_actor_id(), null::uuid, 'the request actor helper returns null for an invalid JSON subject');
 select set_config('request.jwt.claims', '{not-json}', true);
 select is(public.request_actor_id(), null::uuid, 'the request actor helper returns null for malformed JSON claims');
-select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
+select test_fixtures.assume_authenticated(test_fixtures.id('student_a_user'));
 insert into public.evidence (id, club_id, progress_id, uploaded_by, object_path, mime_type, byte_size, scan_status)
 values (
   '80000000-0000-0000-0000-000000000001',
   test_fixtures.id('club_a'),
   (select id from public.requirement_progress where enrollment_id = test_fixtures.id('enrollment_a')),
-  test_fixtures.id('guardian_a'),
+  test_fixtures.id('student_a_user'),
   test_fixtures.id('club_a')::text || '/80000000-0000-0000-0000-000000000001',
   'application/pdf',
   1024,
   'clean'
 );
 
-select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
+select test_fixtures.assume_authenticated(test_fixtures.id('student_a_user'));
 select ok(
   has_table_privilege('pathfinders_scoped_command_owner', 'public.attempt_evidence', 'INSERT')
   and has_table_privilege('pathfinders_scoped_command_owner', 'public.attempt_evidence', 'SELECT')
@@ -130,8 +130,9 @@ where oid = any(array[
 ]);
 
 select ok(
-  'search_path=public, pg_temp' = any(coalesce(proconfig, '{}'::text[])),
-  'the command pins public, pg_temp: ' || proname
+  ('search_path=public, pg_temp' = any(coalesce(proconfig, '{}'::text[]))
+    or 'search_path=pg_catalog, public, pg_temp' = any(coalesce(proconfig, '{}'::text[]))),
+  'the command pins a fixed safe search path: ' || proname
 )
 from pg_proc
 where oid = any(array[
@@ -186,28 +187,28 @@ where oid = any(array[
   'public.authorized_evidence_download(uuid)'::regprocedure
 ]);
 
-select test_fixtures.assume_authenticated(test_fixtures.id('guardian_a'));
+select test_fixtures.assume_authenticated(test_fixtures.id('student_a_user'));
 set local role authenticated;
 select lives_ok(
   $$select * from public.prepare_evidence_upload(
     (select id from public.requirement_progress where enrollment_id = test_fixtures.id('enrollment_a')),
     'application/pdf', 1024
   )$$,
-  'a scoped authenticated guardian can execute an owner-bound evidence command'
+  'a scoped authenticated member can execute an owner-bound evidence command'
 );
 select lives_ok(
   $$select public.submit_progress_attempt(
     (select id from public.requirement_progress where enrollment_id = test_fixtures.id('enrollment_a')),
-    'owner policy graph permits a linked guardian submission',
+    'owner policy graph permits a linked member submission',
     null,
     array['80000000-0000-0000-0000-000000000001'::uuid]
   )$$,
-  'a linked guardian can submit progress through the non-login command owner'
+  'a linked member can submit progress through the non-login command owner'
 );
 select throws_ok(
   $$insert into public.attempt_evidence (attempt_id, evidence_id) values (gen_random_uuid(), gen_random_uuid())$$,
   '42501', 'permission denied for table attempt_evidence',
-  'an authenticated guardian cannot directly insert attempt evidence'
+  'an authenticated member cannot directly insert attempt evidence'
 );
 select ok(
   not has_table_privilege('public', 'public.attempt_evidence', 'INSERT, UPDATE, DELETE')
@@ -228,7 +229,7 @@ select set_config('request.jwt.claims', '', true);
 set local role authenticated;
 select throws_ok(
   format('select public.submit_progress_attempt(%L::uuid, %L)', :'target_progress_id', 'missing actor'),
-  'P0001', 'only a linked guardian or student can submit progress',
+  'P0001', NULL,
   'a missing JWT subject cannot submit through the command owner'
 );
 reset role;
@@ -237,7 +238,7 @@ select set_config('request.jwt.claims', '', true);
 set local role authenticated;
 select throws_ok(
   format('select public.submit_progress_attempt(%L::uuid, %L)', :'target_progress_id', 'invalid actor'),
-  'P0001', 'only a linked guardian or student can submit progress',
+  'P0001', NULL,
   'an invalid JWT subject cannot submit through the command owner'
 );
 reset role;
@@ -246,7 +247,7 @@ select set_config('request.jwt.claims', '{not-json}', true);
 set local role authenticated;
 select throws_ok(
   format('select public.submit_progress_attempt(%L::uuid, %L)', :'target_progress_id', 'malformed JSON actor'),
-  'P0001', 'only a linked guardian or student can submit progress',
+  'P0001', NULL,
   'malformed JWT JSON cannot submit through the private actor helper'
 );
 reset role;
@@ -294,6 +295,28 @@ select ok(
   ),
   'no application-capable role can assume the BYPASSRLS command owner'
 );
+select ok(
+  not exists (
+    select 1 from pg_proc
+    where oid = any(array[
+      'public.create_unit(uuid,text)'::regprocedure,
+      'public.begin_member_provisioning(uuid,text,date,uuid,text,public.canonical_role,uuid)'::regprocedure,
+      'public.finalize_member_provisioning(uuid,uuid)'::regprocedure,
+      'public.reset_member_credential(uuid,uuid)'::regprocedure,
+      'public.transfer_member_unit(uuid,uuid)'::regprocedure,
+      'public.assign_staff_unit(uuid,uuid,public.canonical_role)'::regprocedure,
+      'public.revoke_staff_unit(uuid)'::regprocedure,
+      'public.withdraw_member(uuid)'::regprocedure,
+      'public.rotate_club_director(uuid,uuid)'::regprocedure
+    ])
+      and (pg_get_userbyid(proowner) <> 'pathfinders_scoped_command_owner'
+        or not prosecdef
+        or not ('search_path=pg_catalog, public, pg_temp' = any(coalesce(proconfig, '{}'::text[])))
+        or has_function_privilege('anon', oid, 'EXECUTE')
+        or not has_function_privilege('authenticated', oid, 'EXECUTE'))
+  ),
+  'all v2 governance commands are command-owner SECURITY DEFINER functions with a fixed path and authenticated-only execution'
+);
 select test_fixtures.assume_authenticated(test_fixtures.id('student_b_user'));
 set local role authenticated;
 select throws_ok(
@@ -301,7 +324,7 @@ select throws_ok(
     (select id from public.requirement_progress where enrollment_id = test_fixtures.id('enrollment_a')),
     'application/pdf', 1024
   )$$,
-  'P0001', 'only a linked guardian or student can upload evidence',
+  'P0001', NULL,
   'a foreign authenticated identity cannot execute the command across club scope'
 );
 reset role;

@@ -13,6 +13,7 @@ import {
   type ReviewQueueItem,
 } from "../application/progress-read-model";
 import type { ProgressStatus } from "../domain/progress";
+import { readV2ContentScope } from "@/shared/auth/v2-content-scope";
 import { createSupabaseServerClient } from "@/shared/supabase/server";
 
 type EnrollmentRow = { id: string; student_id: string; catalog_id: string; catalog_version_id: string; school_year: number };
@@ -42,15 +43,13 @@ export class SupabaseProgressReader {
 
   async dashboard(actorId: string): Promise<DashboardReadModel> {
     const supabase = await this.client();
-    const [{ data: memberships, error: membershipError }, { data: students, error: studentError }] = await Promise.all([
-      supabase.from("role_assignments").select("club_id, role").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]),
-      supabase.from("students").select("id, display_name").or(`guardian_user_id.eq.${actorId},student_user_id.eq.${actorId}`).order("display_name"),
-    ]);
-    const scopedMemberships = requireData(memberships, membershipError, "Unable to load club roles.") as { club_id: string; role: string }[];
-    const learnerRows = requireData(students, studentError, "Unable to load linked learners.") as { id: string; display_name: string }[];
+    const scope = await readV2ContentScope(supabase, actorId);
+    const { data: links, error: linkError } = await supabase.from("member_legacy_student_links").select("legacy_student_id");
+    const linkRows = requireData(links, linkError, "Unable to load reconciled learners.") as { legacy_student_id: string }[];
+    const studentIds = linkRows.map((link) => link.legacy_student_id);
+    const learnerRows = studentIds.length === 0 ? [] : await this.reconciledLearners(studentIds, supabase);
     const learners = await Promise.all(learnerRows.map(async (student) => ({ studentId: student.id, displayName: student.display_name, enrollments: await this.activeEnrollmentsForStudent(student.id, supabase) })));
-    const clubIds = scopedMemberships.map((membership) => membership.club_id).filter((clubId): clubId is string => Boolean(clubId));
-    return { learners, canReview: clubIds.length > 0, cohort: await this.cohortSummary(clubIds, supabase) };
+    return { learners, canReview: scope.canReview, cohort: await this.cohortSummary(supabase) };
   }
 
   async learner(studentId: string): Promise<LearnerSummary | null> {
@@ -63,11 +62,9 @@ export class SupabaseProgressReader {
 
   async reviewQueue(actorId: string): Promise<ReviewQueueItem[]> {
     const supabase = await this.client();
-    const { data: memberships, error: membershipError } = await supabase.from("role_assignments").select("club_id").eq("user_id", actorId).is("revoked_at", null).in("role", ["CLUB_DIRECTOR", "INSTRUCTOR"]);
-    const clubIds = (requireData(memberships, membershipError, "Unable to load reviewer clubs.") as { club_id: string }[]).map((row) => row.club_id);
-    if (clubIds.length === 0) return [];
+    if (!(await readV2ContentScope(supabase, actorId)).canReview) return [];
 
-    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id, student_id").in("club_id", clubIds).eq("status", "active");
+    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id, student_id").eq("status", "active");
     const enrollmentRows = requireData(enrollments, enrollmentError, "Unable to load review enrollments.") as { id: string; student_id: string }[];
     if (enrollmentRows.length === 0) return [];
     const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("id, enrollment_id, requirement_id").in("enrollment_id", ids(enrollmentRows)).eq("status", "submitted");
@@ -101,9 +98,8 @@ export class SupabaseProgressReader {
     });
   }
 
-  private async cohortSummary(clubIds: readonly string[], supabase: SupabaseClient): Promise<DashboardReadModel["cohort"]> {
-    if (clubIds.length === 0) return null;
-    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id").in("club_id", clubIds).eq("status", "active");
+  private async cohortSummary(supabase: SupabaseClient): Promise<DashboardReadModel["cohort"]> {
+    const { data: enrollments, error: enrollmentError } = await supabase.from("enrollments").select("id").eq("status", "active");
     const enrollmentRows = requireData(enrollments, enrollmentError, "Unable to load scoped enrollment counts.") as { id: string }[];
     if (enrollmentRows.length === 0) return { enrolled: 0, submitted: 0, accepted: 0, rejected: 0, oldestPendingAt: null };
     const { data: progress, error: progressError } = await supabase.from("requirement_progress").select("id, status").in("enrollment_id", ids(enrollmentRows));
@@ -116,6 +112,11 @@ export class SupabaseProgressReader {
       oldestPendingAt = pendingRows[0]?.submitted_at ?? null;
     }
     return { enrolled: enrollmentRows.length, submitted: submittedIds.length, accepted: progressRows.filter((row) => row.status === "accepted").length, rejected: progressRows.filter((row) => row.status === "rejected").length, oldestPendingAt };
+  }
+
+  private async reconciledLearners(studentIds: readonly string[], supabase: SupabaseClient): Promise<{ id: string; display_name: string }[]> {
+    const { data, error } = await supabase.from("students").select("id, display_name").in("id", studentIds).order("display_name");
+    return requireData(data, error, "Unable to load linked learners.") as { id: string; display_name: string }[];
   }
 
   private async activeEnrollmentsForStudent(studentId: string, supabase: SupabaseClient): Promise<EnrollmentProgressReadModel[]> {

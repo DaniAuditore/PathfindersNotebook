@@ -20,6 +20,7 @@ vuelven a autorizar el recurso y llaman al RPC indicado.
 | `/club` | Nombre de clubes donde el actor es director | `update_club(target_club_id, name_input)` | Sólo dirección activa; no crea clubes. |
 | `/audit` | Acción, tipo de entidad, momento y etiqueta de actor reducida; 25 por página | Ninguna | Nunca muestra metadatos, IDs, perfiles, correo ni cargas. |
 | `/assessments` | Inscripciones RLS-visibles de clubes dirigidos o instruidos, progreso agregado y estado actual | `record_assessment`, `record_investiture` | El evaluador asignado no se expone hasta contar con una lectura aprobada; el RPC verifica alcance y precondiciones. |
+| `/members` | Dirección: miembros, unidades, condición derivada y remediaciones de su club. Administración del sistema: sólo metadatos de rotación. | Registro, remediación, unidad, traslado, asignación/revocación, retiro y rotación auditados por RPC. | La contraseña temporal se muestra una única vez; no se muestra alias, evidencia, tarjetas ni datos de otro club. Consejero: una unidad; instructor: varias. |
 
 ## Operaciones aplazadas
 
@@ -29,7 +30,16 @@ unidades, consejeros, notificaciones, exportaciones, recuperación de cuenta,
 se explican en `/operaciones-no-disponibles`; no se muestran controles desactivados
 ni rutas que simulen disponibilidad.
 
-## Pantallas privilegiadas
+## Membresía v2 y pantallas privilegiadas
+
+La condición Conquistador/Líder se deriva de la fecha completa de nacimiento al
+inicio del día local del club; no es un rol asignable. Una membresía pendiente
+de remediación no recibe acceso operativo hasta que la dirección complete fecha
+de nacimiento y unidad. Retirar revoca acceso y conserva el historial. La
+rotación de dirección sólo la realiza `SYSTEM_ADMIN`, exige motivo auditado y
+deja a la dirección saliente únicamente como Líder sin asignaciones de personal.
+`SYSTEM_ADMIN` no recibe lectura de tarjetas, progreso, contenido sensible ni
+evidencia.
 
 La evidencia redactada del control efectivo de propiedad, ACL y `SECURITY
 DEFINER` de los comandos 024/025 está aprobada para las pantallas `/club`,

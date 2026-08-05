@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures.sql
 
-select plan(6);
+select plan(8);
 
 select lives_ok(
   'select test_fixtures.install()',
@@ -30,6 +30,17 @@ select is(
   (select requires_evidence from public.requirements where id = test_fixtures.id('requirement_a')),
   true,
   'the fixture includes an evidence-required requirement prerequisite'
+);
+
+select is(
+  (select timezone from public.clubs where id = test_fixtures.id('club_a')),
+  'America/Argentina/Buenos_Aires',
+  'the fixture has an explicit IANA club timezone'
+);
+select is(
+  (select count(*)::integer from public.staff_unit_assignments where unit_id = test_fixtures.id('unit_a') and ended_at is null),
+  2,
+  'the fixture has active counselor and instructor unit staffing'
 );
 
 select test_fixtures.assume_authenticated(test_fixtures.id('admin_a'));

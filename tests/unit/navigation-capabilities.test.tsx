@@ -9,10 +9,20 @@ import { navigationCapabilities } from "@/shared/navigation/navigation-capabilit
 import { Navigation } from "@/shared/ui/navigation";
 
 describe("capacidad de navegación", () => {
+  function v2Client({ director, staff }: { director: boolean; staff: boolean }) {
+    return {
+      from: vi.fn((table: string) => {
+        if (table === "club_members") {
+          const query = { select: () => query, eq: vi.fn().mockImplementationOnce(() => query).mockResolvedValueOnce({ data: [{ id: "member-a" }] }) };
+          return query;
+        }
+        const query = { select: () => query, eq: () => query, in: () => query, is: vi.fn().mockResolvedValue({ data: table === "club_director_assignments" && director ? [{ id: "director-a" }] : table === "staff_unit_assignments" && staff ? [{ id: "staff-a" }] : [] }) };
+        return query;
+      }),
+    };
+  }
   it("muestra inscripciones sólo para administradores y no convierte visibilidad en autorización", async () => {
-    const is = vi.fn().mockResolvedValue({ data: [{ role: "INSTRUCTOR" }] });
-    const eq = vi.fn(() => ({ is }));
-    createSupabaseServerClient.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq })) })) });
+    createSupabaseServerClient.mockResolvedValue(v2Client({ director: false, staff: true }));
     const links = await navigationCapabilities({ id: "instructor" });
     expect(links.find((link) => link.href === "/reviews")?.visible).toBe(true);
     expect(links.find((link) => link.href === "/enrollments")?.visible).toBe(false);
@@ -23,9 +33,7 @@ describe("capacidad de navegación", () => {
   });
 
   it("muestra perfil para toda sesión y reserva club para dirección activa", async () => {
-    const is = vi.fn().mockResolvedValue({ data: [{ role: "CLUB_DIRECTOR" }] });
-    const eq = vi.fn(() => ({ is }));
-    createSupabaseServerClient.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq })) })) });
+    createSupabaseServerClient.mockResolvedValue(v2Client({ director: true, staff: false }));
 
     const links = await navigationCapabilities({ id: "director" });
     expect(links.find((link) => link.href === "/profile")?.visible).toBe(true);

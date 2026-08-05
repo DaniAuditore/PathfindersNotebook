@@ -25,7 +25,12 @@ export async function refreshSupabaseSession(request: NextRequest) {
 
   // This server round-trip validates the token and refreshes expired cookies.
   const { data, error } = await supabase.auth.getUser();
-  return { response, user: error ? null : data.user };
+  if (error || !data.user) return { response, user: null, credentialGate: "DENY" as const };
+  // The v2 gate applies exclusively to server-created private aliases. Legacy
+  // email accounts stay operational until the explicitly deferred cutover.
+  if (!data.user.email?.endsWith("@members.invalid")) return { response, user: data.user, credentialGate: "ALLOW" as const };
+  const { data: credentialGate } = await supabase.rpc("credential_gate_status");
+  return { response, user: data.user, credentialGate: credentialGate === "ALLOW" || credentialGate === "CHANGE_PASSWORD" ? credentialGate : "DENY" as const };
 }
 
 export function redirectWithRefreshedCookies(url: URL, refreshedResponse: NextResponse) {

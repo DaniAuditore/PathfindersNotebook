@@ -7,11 +7,15 @@ export const localActors = {
   instructor: { email: "e2e-instructor@local.test", password: "local-e2e-fixture-password" },
 } as const;
 
-const clubId = "91000000-0000-0000-0000-000000000001";
+const clubId = "91000000-0000-4000-8000-000000000001";
 const studentId = "92000000-0000-0000-0000-000000000001";
 const catalogId = "93000000-0000-0000-0000-000000000001";
 const catalogVersionId = "94000000-0000-0000-0000-000000000001";
 const enrollmentId = "95000000-0000-0000-0000-000000000001";
+const unitId = "96000000-0000-4000-8000-000000000001";
+const directorMemberId = "97000000-0000-4000-8000-000000000001";
+const instructorMemberId = "97000000-0000-4000-8000-000000000002";
+const studentMemberId = "97000000-0000-4000-8000-000000000003";
 let ready: Promise<void> | undefined;
 
 function localEnvironment() {
@@ -53,8 +57,10 @@ async function install() {
 
 function installDatabaseRows(directorId: string, instructorId: string) {
   if (![directorId, instructorId].every((id) => /^[0-9a-f-]{36}$/i.test(id))) throw new Error("Local Auth returned an invalid fixture ID.");
+  // Keep the pagination fixture later than all mutable E2E activity. The audit
+  // log is immutable, so re-runs retain these rows and cannot reseed their time.
   const auditRows = Array.from({ length: 26 }, (_, index) => `
-    ('${clubId}', '${directorId}', 'acción-local-${index + 1}', 'inscripción', '${enrollmentId}', '{"email":"never-render@example.test","token":"not-rendered"}', '2026-01-01T00:00:${String(index).padStart(2, "0")}Z')`).join(",");
+    ('${clubId}', '${directorId}', 'acción-local-${index + 1}', 'inscripción', '${enrollmentId}', '{"email":"never-render@example.test","token":"not-rendered"}', '2099-01-01T00:00:${String(index).padStart(2, "0")}Z')`).join(",");
   // The local test database intentionally closes service_role table DML. Fixture
   // rows therefore use only the local Postgres container, never an HTTP role or
   // deployed connection. Application mutations still use authenticated RPCs.
@@ -63,9 +69,23 @@ function installDatabaseRows(directorId: string, instructorId: string) {
     insert into public.profiles (user_id, display_name) values ('${directorId}', 'Directora local E2E'), ('${instructorId}', 'Instructor local E2E') on conflict (user_id) do update set display_name = excluded.display_name;
     insert into public.clubs (id, name) values ('${clubId}', 'Club local E2E') on conflict (id) do update set name = excluded.name;
     insert into public.memberships (club_id, user_id, role) values ('${clubId}', '${directorId}', 'admin'), ('${clubId}', '${instructorId}', 'instructor') on conflict (club_id, user_id) do update set role = excluded.role;
-    delete from public.role_assignments where user_id in ('${directorId}', '${instructorId}');
-    insert into public.role_assignments (user_id, role, club_id) values ('${directorId}', 'CLUB_DIRECTOR', '${clubId}'), ('${instructorId}', 'INSTRUCTOR', '${clubId}');
     insert into public.students (id, club_id, display_name) values ('${studentId}', '${clubId}', 'Alumno local E2E') on conflict (id) do update set display_name = excluded.display_name;
+    insert into public.units (id, club_id, name) values ('${unitId}', '${clubId}', 'Unidad local E2E') on conflict (id) do update set name = excluded.name;
+    insert into public.club_members (id, club_id, user_id, full_name, date_of_birth, lifecycle) values
+      ('${directorMemberId}', '${clubId}', '${directorId}', 'Directora local E2E', '1980-01-01', 'ACTIVE'),
+      ('${instructorMemberId}', '${clubId}', '${instructorId}', 'Instructor local E2E', '1980-01-01', 'ACTIVE'),
+      ('${studentMemberId}', '${clubId}', null, 'Alumno local E2E', '2010-01-01', 'ACTIVE')
+    on conflict (id) do update set user_id = excluded.user_id, lifecycle = excluded.lifecycle;
+    insert into public.member_unit_assignments (member_id, unit_id) values
+      ('${directorMemberId}', '${unitId}'),
+      ('${instructorMemberId}', '${unitId}'),
+      ('${studentMemberId}', '${unitId}')
+    on conflict do nothing;
+    insert into public.club_director_assignments (club_id, member_id) values ('${clubId}', '${directorMemberId}') on conflict do nothing;
+    insert into public.staff_unit_assignments (member_id, unit_id, role) values ('${instructorMemberId}', '${unitId}', 'INSTRUCTOR') on conflict do nothing;
+    insert into public.member_legacy_student_links (legacy_student_id, member_id, club_id) values ('${studentId}', '${studentMemberId}', '${clubId}') on conflict (legacy_student_id) do update set member_id = excluded.member_id, club_id = excluded.club_id;
+    insert into public.member_legacy_reconciliation_ledger (legacy_student_id, club_id, member_id, outcome, reason, snapshot, reconciled_at) values ('${studentId}', '${clubId}', '${studentMemberId}', 'RECONCILED', 'local E2E fixture', '{}'::jsonb, now()) on conflict (legacy_student_id) do nothing;
+    insert into public.v2_cutover_control (singleton, state, reconciled_at, note) values (true, 'ENABLED', now(), 'local E2E fixture') on conflict (singleton) do update set state = excluded.state, reconciled_at = excluded.reconciled_at, note = excluded.note;
     insert into public.catalogs (id, club_id, class_type, title) values ('${catalogId}', '${clubId}', 'regular', 'Catálogo local E2E') on conflict (id) do update set title = excluded.title;
     insert into public.catalog_versions (id, catalog_id, version_number, status, published_at) values ('${catalogVersionId}', '${catalogId}', 1, 'published', '2026-01-01T00:00:00Z') on conflict (id) do nothing;
     insert into public.enrollments (id, club_id, student_id, catalog_id, catalog_version_id, school_year, enrolled_by) values ('${enrollmentId}', '${clubId}', '${studentId}', '${catalogId}', '${catalogVersionId}', 2026, '${directorId}') on conflict (id) do nothing;
@@ -86,4 +106,20 @@ function installDatabaseRows(directorId: string, instructorId: string) {
 export function installLocalAuthFixtures() {
   ready ??= install();
   return ready;
+}
+
+/** Local-only clock control for the browser expiry journey. */
+export function expireInternalCredential(username: string) {
+  if (!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(username)) throw new Error("Invalid local fixture username.");
+  const sql = `update public.member_credentials set temporary_credential_expires_at = clock_timestamp() - interval '1 minute' where username = '${username}';`;
+  const containers = execFileSync("docker", ["ps", "-q", "--filter", "label=com.supabase.cli.project=pathfindersnotebook"], { encoding: "utf8" }).trim().split(/\s+/).filter(Boolean);
+  for (const container of containers) {
+    try {
+      execFileSync("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], { input: sql, stdio: ["pipe", "ignore", "ignore"] });
+      return;
+    } catch {
+      // Only the local database container has psql; ignore the API/Auth peers.
+    }
+  }
+  throw new Error("The local Supabase Postgres container was not available for E2E fixtures.");
 }

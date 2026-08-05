@@ -288,16 +288,77 @@ describe("Supabase migration security contracts", () => {
     expect(evidenceFacade).toContain('supabase.rpc("prepare_evidence_upload"');
   });
 
+  it("adds the v2 member/unit foundation without cutting legacy authority over prematurely", () => {
+    const foundation = migration("033_member_unit_v2.sql");
+
+    expect(foundation).toContain("add column timezone text not null default 'Etc/UTC'");
+    expect(foundation).toContain("club timezone must be a valid IANA timezone");
+    expect(foundation).toContain("create table public.club_members");
+    expect(foundation).toContain("'ACTIVE', 'PENDING_REMEDIATION', 'WITHDRAWN'");
+    expect(foundation).toContain("member_condition_at");
+    expect(foundation).toContain("timezone(c.timezone, observed_at)");
+    expect(foundation).toContain("member_unit_assignments_one_active_member");
+    expect(foundation).toContain("staff_unit_assignments_one_active_counselor_unit");
+    expect(foundation).toContain("staff assignments require an active Leader in the unit club");
+    expect(foundation).toContain("SYSTEM_ADMIN has governance commands");
+    expect(foundation).toContain("revoke insert, update, delete on table public.club_members");
+    expect(foundation).toContain("pathfinders_scoped_command_owner");
+    expect(foundation).toContain("not replace the legacy reader graph");
+    expect(foundation).not.toContain("drop type public.canonical_role");
+  });
+
+  it("adds audited v2 governance commands while keeping credentials and content authority server-scoped", () => {
+    const commands = migration("034_member_credential_commands.sql");
+
+    expect(commands).toContain("create table public.member_credentials");
+    expect(commands).toContain("INITIAL_CHANGE_REQUIRED");
+    expect(commands).toContain("temporary_credential_expires_at = now() + interval '24 hours'");
+    expect(commands).toContain("create or replace function public.begin_member_provisioning");
+    expect(commands).toContain("create or replace function public.transfer_member_unit");
+    expect(commands).toContain("create or replace function public.assign_staff_unit");
+    expect(commands).toContain("create or replace function public.rotate_club_director");
+    expect(commands).toContain("only a system administrator may rotate a club director");
+    expect(commands).toContain("update public.staff_unit_assignments set ended_at = clock_timestamp() where member_id = outgoing_member_id");
+    expect(commands).toContain("declare actor_id uuid := public.request_actor_id()");
+    expect(commands).toContain("owner to pathfinders_scoped_command_owner");
+    expect(commands).toContain("revoke all on table public.member_credentials from public, anon, authenticated");
+    expect(commands).toContain("create or replace function public.credential_gate_status()");
+    expect(commands).toContain("where mc.auth_user_id = auth.uid()");
+    expect(commands).toContain("complete_initial_password_change(change_token text)");
+    expect(commands).not.toContain("temporaryPassword");
+  });
+
+  it("keeps temporary credentials out of URLs and records DOB transitions through a command-only writer", () => {
+    const actions = readFileSync(resolve(process.cwd(), "src", "modules", "clubs", "presentation", "member-actions.ts"), "utf8");
+    const transitionAudit = migration("037_member_condition_transition_audit.sql");
+    const readerScope = migration("038_v2_club_unit_reader_scope.sql");
+
+    expect(actions).not.toContain("temporaryPassword=");
+    expect(actions).toContain('return { status: "success", username: command.username, temporaryPassword }');
+    expect(transitionAudit).toContain("public.member_condition_at(target_member_id, observed_at_input)");
+    expect(transitionAudit).toContain("on conflict (member_id, condition) do nothing");
+    expect(transitionAudit).toContain("revoke all on function public.record_member_condition_transition(uuid, timestamptz), public.evaluate_member_condition(uuid) from public, anon, authenticated");
+    expect(readerScope).toContain('create policy "v2 actors read scoped clubs"');
+    expect(readerScope).toContain('create policy "v2 actors read scoped units"');
+  });
+
   it("keeps migration and staging documentation aligned with the current dynamic gate", () => {
     const readme = documentation("README.md");
     const staging = documentation("docs/STAGING_VALIDATION.md");
     const gate = documentation("scripts/migration-gate.mjs");
+    const gateActor = migration("040_credential_gate_request_actor.sql");
+    const completion = migration("041_complete_initial_password_change_digest.sql");
 
-    expect(readme).toContain("currently `001`–`032`");
-    expect(staging).toContain("currently `001`–`032`");
-    expect(staging).toContain("032_grant_rls_reader_select_privileges.sql");
+    expect(readme).toContain("currently `001`–`041`");
+    expect(staging).toContain("currently `001`–`041`");
+    expect(staging).toContain("040_credential_gate_request_actor.sql");
+    expect(staging).toContain("041_complete_initial_password_change_digest.sql");
+    expect(`${readme}\n${staging}`).toContain("last recorded linked-staging baseline is `001`–`039`");
+    expect(`${readme}\n${staging}`).toContain("pending suffix");
     expect(staging).toContain("pathfinders_scoped_command_owner");
     expect(staging).toContain("exactly the pending forward-only suffix");
+    expect(gateActor).toContain("actor_id uuid := public.request_actor_id()");
+    expect(completion).toContain("extensions.digest(change_token, 'sha256')");
     expect(`${readme}\n${staging}`).not.toContain("through current migration `020`");
     expect(staging).not.toContain("The current application has no sign-in screen");
     expect(gate).toContain('await runSupabase(["db", "reset", "--local", "--no-seed"]);');
